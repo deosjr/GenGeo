@@ -49,19 +49,24 @@ func TestPointsOnCircle(t *testing.T) {
 	}
 }
 
+func compareVector(u, v m.Vector) bool {
+	imprecision := 1000.0
+	for d := 0; d < 3; d++ {
+		dim := m.Dimension(d)
+		if int(u.Get(dim)*imprecision) != int(v.Get(dim)*imprecision) {
+			return false
+		}
+	}
+	return true
+}
+
 func compareVectors(vl1, vl2 []m.Vector) bool {
 	if len(vl1) != len(vl2) {
 		return false
 	}
-	imprecision := 1000.0
 	for i := 0; i < len(vl1); i++ {
-		v1 := vl1[i]
-		v2 := vl2[i]
-		for d := 0; d < 3; d++ {
-			dim := m.Dimension(d)
-			if int(v1.Get(dim)*imprecision) != int(v2.Get(dim)*imprecision) {
-				return false
-			}
+		if !compareVector(vl1[i], vl2[i]) {
+			return false
 		}
 	}
 	return true

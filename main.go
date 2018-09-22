@@ -28,32 +28,22 @@ func main() {
 
 	m.SetBackgroundColor(m.NewColor(50, 100, 150))
 
-	unitcircle := parametricFunction{
-		x: func(t float64) float64 { return math.Cos(t) },
-		y: func(t float64) float64 { return math.Sin(t) },
-		z: func(t float64) float64 { return 0.0 },
-	}
+	p0 := m.Vector{0.70, 0.74, 0.0}
+	p1 := m.Vector{0.26, 2.22, 0.0}
+	p2 := m.Vector{2.20, 2.60, 0.0}
+	p3 := m.Vector{1.90, 1.23, 0.0}
+	bezier := NewCubicBezier(p0, p1, p2, p3)
+	bezierDeriv := bezier.derivative()
+	bezier2nd := bezierDeriv.derivative()
 
-	unitcircleDeriv := parametricFunction{
-		x: func(t float64) float64 { return -math.Sin(t) },
-		y: func(t float64) float64 { return math.Cos(t) },
-		z: func(t float64) float64 { return 0.0 },
-	}
-
-	unitcircle2ndDeriv := parametricFunction{
-		x: func(t float64) float64 { return -math.Cos(t) },
-		y: func(t float64) float64 { return -math.Sin(t) },
-		z: func(t float64) float64 { return 0.0 },
-	}
-
-	numPoints := 100
-	radius := 0.5
-	numSteps := 100
-	stepSize := math.Pi / float64(2*(numSteps-1))
+	numPoints := 20
+	radius := 0.01
+	numSteps := 101
+	stepSize := 1.0 / 101.0
 	diffMat := &m.DiffuseMaterial{m.NewColor(50, 150, 80)}
-	complexObject := parametricObject(unitcircle, unitcircleDeriv, unitcircle2ndDeriv, numPoints, radius, numSteps, stepSize, diffMat)
+	complexObject := parametricObject(bezier, bezierDeriv, bezier2nd, numPoints, radius, numSteps, stepSize, diffMat)
 
-	translation := m.Translate(m.Vector{1, 0, 2})
+	translation := m.Translate(m.Vector{0, 1, 2})
 	rotation := m.RotateY(math.Pi)
 	boom := m.NewSharedObject(complexObject, translation.Mul(rotation))
 	scene.Add(boom)

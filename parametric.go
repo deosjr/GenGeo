@@ -6,10 +6,27 @@ import (
 	m "github.com/deosjr/GRayT/src/model"
 )
 
+type ParametricFunction interface {
+	X(t float64) float64
+	Y(t float64) float64
+	Z(t float64) float64
+	Vector(t float64) m.Vector
+}
+
 type parametricFunction struct {
 	x func(t float64) float64
 	y func(t float64) float64
 	z func(t float64) float64
+}
+
+func (f parametricFunction) X(t float64) float64 {
+	return f.x(t)
+}
+func (f parametricFunction) Y(t float64) float64 {
+	return f.y(t)
+}
+func (f parametricFunction) Z(t float64) float64 {
+	return f.z(t)
 }
 
 func (f parametricFunction) Vector(t float64) m.Vector {
@@ -17,8 +34,10 @@ func (f parametricFunction) Vector(t float64) m.Vector {
 	return v.Normalize()
 }
 
-func frenetFunctions(f, deriv, secDeriv parametricFunction) func(t float64) (p, tangent, normal, binormal m.Vector) {
-	frenet1 := deriv.Vector
+func frenetFunctions(f, deriv, secDeriv ParametricFunction) func(t float64) (p, tangent, normal, binormal m.Vector) {
+	frenet1 := func(t float64) m.Vector {
+		return deriv.Vector(t).Normalize()
+	}
 	frenet2 := func(t float64) m.Vector {
 		secondDeriv := secDeriv.Vector(t)
 		e1 := frenet1(t)
@@ -71,7 +90,7 @@ func joinCirclePoints(pointLists [][]m.Vector, mat m.Material) []m.Object {
 }
 
 // TODO: cleanup parameters
-func parametricObject(f1, f2, f3 parametricFunction, numPoints int, radius float64, numSteps int, stepSize float64, mat m.Material) m.Object {
+func parametricObject(f1, f2, f3 ParametricFunction, numPoints int, radius float64, numSteps int, stepSize float64, mat m.Material) m.Object {
 	f := frenetFunctions(f1, f2, f3)
 	points := make([][]m.Vector, numSteps)
 
