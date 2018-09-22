@@ -89,18 +89,29 @@ func joinCirclePoints(pointLists [][]m.Vector, mat m.Material) []m.Object {
 	return triangles
 }
 
-// TODO: cleanup parameters
-func parametricObject(f1, f2, f3 ParametricFunction, numPoints int, radius float64, numSteps int, stepSize float64, mat m.Material) m.Object {
-	f := frenetFunctions(f1, f2, f3)
-	points := make([][]m.Vector, numSteps)
+type parametricObject struct {
+	function         ParametricFunction
+	derivative       ParametricFunction
+	secondDerivative ParametricFunction
+	numPoints        int
+	radius           func(t float64) float64
+	numSteps         int
+	stepSize         float64
+	mat              m.Material
+}
 
-	for i := 0; i < numSteps; i++ {
-		t := float64(i) * stepSize
+// TODO: cleanup parameters
+func (po parametricObject) build() m.Object {
+	f := frenetFunctions(po.function, po.derivative, po.secondDerivative)
+	points := make([][]m.Vector, po.numSteps)
+
+	for i := 0; i < po.numSteps; i++ {
+		t := float64(i) * po.stepSize
 		p, _, normal, binormal := f(t)
 		// reverse index because of triangle normals?
-		points[numSteps-1-i] = pointsOnCircle(p, normal, binormal, numPoints, radius)
+		points[po.numSteps-1-i] = pointsOnCircle(p, normal, binormal, po.numPoints, po.radius(t))
 	}
 
-	triangles := joinCirclePoints(points, mat)
+	triangles := joinCirclePoints(points, po.mat)
 	return m.NewComplexObject(triangles)
 }

@@ -28,24 +28,29 @@ func main() {
 
 	m.SetBackgroundColor(m.NewColor(50, 100, 150))
 
-	p0 := m.Vector{0.70, 0.74, 0.0}
-	p1 := m.Vector{0.26, 2.22, 0.0}
-	p2 := m.Vector{2.20, 2.60, 0.0}
-	p3 := m.Vector{1.90, 1.23, 0.0}
+	p0 := m.Vector{0.00, 0.00, 0.0}
+	p1 := m.Vector{0.10, 1.5, 0.25}
+	p2 := m.Vector{2.20, 2.6, 0.75}
+	p3 := m.Vector{2.90, 1.23, 1.0}
 	bezier := NewCubicBezier(p0, p1, p2, p3)
 	bezierDeriv := bezier.derivative()
 	bezier2nd := bezierDeriv.derivative()
 
-	numPoints := 20
-	radius := 0.01
-	numSteps := 101
-	stepSize := 1.0 / 101.0
-	diffMat := &m.DiffuseMaterial{m.NewColor(50, 150, 80)}
-	complexObject := parametricObject(bezier, bezierDeriv, bezier2nd, numPoints, radius, numSteps, stepSize, diffMat)
+	po := parametricObject{
+		function:         bezier,
+		derivative:       bezierDeriv,
+		secondDerivative: bezier2nd,
+		numPoints:        20,
+		radius:           func(t float64) float64 { return (1 - t) * 0.01 },
+		numSteps:         101,
+		stepSize:         1.0 / 101.0,
+		mat:              &m.DiffuseMaterial{m.NewColor(50, 150, 80)},
+	}
+	complexObject := po.build()
 
-	translation := m.Translate(m.Vector{0, 1, 2})
-	rotation := m.RotateY(math.Pi)
-	boom := m.NewSharedObject(complexObject, translation.Mul(rotation))
+	translation := m.Translate(m.Vector{-1, 0, 2})
+	// rotation := m.RotateY(math.Pi)
+	boom := m.NewSharedObject(complexObject, translation) //.Mul(rotation))
 	scene.Add(boom)
 
 	scene.Precompute()
