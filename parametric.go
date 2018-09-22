@@ -30,8 +30,7 @@ func (f parametricFunction) Z(t float64) float64 {
 }
 
 func (f parametricFunction) Vector(t float64) m.Vector {
-	v := m.Vector{f.x(t), f.y(t), f.z(t)}
-	return v.Normalize()
+	return m.Vector{f.x(t), f.y(t), f.z(t)}
 }
 
 func frenetFunctions(f, deriv, secDeriv ParametricFunction) func(t float64) (p, tangent, normal, binormal m.Vector) {
@@ -100,7 +99,6 @@ type parametricObject struct {
 	mat              m.Material
 }
 
-// TODO: cleanup parameters
 func (po parametricObject) build() m.Object {
 	f := frenetFunctions(po.function, po.derivative, po.secondDerivative)
 	points := make([][]m.Vector, po.numSteps)

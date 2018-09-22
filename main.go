@@ -28,30 +28,26 @@ func main() {
 
 	m.SetBackgroundColor(m.NewColor(50, 100, 150))
 
-	p0 := m.Vector{0.00, 0.00, 0.0}
-	p1 := m.Vector{0.10, 1.5, 0.25}
-	p2 := m.Vector{2.20, 2.6, 0.75}
-	p3 := m.Vector{2.90, 1.23, 1.0}
-	bezier := NewCubicBezier(p0, p1, p2, p3)
-	bezierDeriv := bezier.derivative()
-	bezier2nd := bezierDeriv.derivative()
-
+	helix := NewHelix(1.0, 0.5)
 	po := parametricObject{
-		function:         bezier,
-		derivative:       bezierDeriv,
-		secondDerivative: bezier2nd,
+		function:         helix.function(),
+		derivative:       helix.derivative(),
+		secondDerivative: helix.secondDerivative(),
 		numPoints:        20,
-		radius:           func(t float64) float64 { return (1 - t) * 0.01 },
-		numSteps:         101,
-		stepSize:         1.0 / 101.0,
+		radius:           func(t float64) float64 { return 0.1 },
+		numSteps:         300,
+		stepSize:         math.Pi / 32.0,
 		mat:              &m.DiffuseMaterial{m.NewColor(50, 150, 80)},
 	}
 	complexObject := po.build()
 
-	translation := m.Translate(m.Vector{-1, 0, 2})
-	// rotation := m.RotateY(math.Pi)
-	boom := m.NewSharedObject(complexObject, translation) //.Mul(rotation))
-	scene.Add(boom)
+	translation := m.Translate(m.Vector{0, -0.5, 2})
+	rotation := m.RotateX(-math.Pi / 2.0)
+	helix1 := m.NewSharedObject(complexObject, translation.Mul(rotation))
+	scene.Add(helix1)
+	rotation = m.RotateY(math.Pi).Mul(m.RotateX(-math.Pi / 2.0))
+	helix2 := m.NewSharedObject(complexObject, translation.Mul(rotation))
+	scene.Add(helix2)
 
 	scene.Precompute()
 
