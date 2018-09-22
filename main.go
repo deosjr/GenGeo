@@ -26,9 +26,11 @@ func main() {
 	l1 := m.NewDistantLight(m.Vector{1, -1, 1}, m.NewColor(255, 255, 255), 50)
 	scene.AddLights(l1)
 
-	m.SetBackgroundColor(m.NewColor(50, 100, 150))
+	m.SetBackgroundColor(m.NewColor(10, 10, 50))
 
-	helix := NewHelix(1.0, 0.5)
+	aFunc := func(t float64) float64 { return t * 0.3 }
+	bFunc := func(t float64) float64 { return t * 0.05 }
+	helix := NewHelix(aFunc, bFunc)
 	po := parametricObject{
 		function:         helix.function(),
 		derivative:       helix.derivative(),
@@ -37,7 +39,7 @@ func main() {
 		radius:           func(t float64) float64 { return 0.1 },
 		numSteps:         300,
 		stepSize:         math.Pi / 32.0,
-		mat:              &m.DiffuseMaterial{m.NewColor(50, 150, 80)},
+		mat:              &m.DiffuseMaterial{m.NewColor(200, 100, 0)},
 	}
 	complexObject := po.build()
 
