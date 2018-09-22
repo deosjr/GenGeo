@@ -31,15 +31,43 @@ func main() {
 	// diffMat := &m.DiffuseMaterial{m.NewColor(50, 10, 100)}
 	// reflMat := &m.ReflectiveMaterial{scene}
 	translation := m.Translate(m.Vector{1, 0, 2})
-	rotation := m.RotateY(math.Pi / 4)
+	rotation := m.RotateY(math.Pi)
 
 	numPoints := 20
 	radius := 0.5
-	c0 := pointsOnCircle(m.Vector{0, 0, 0}, ex, ez, numPoints, radius)
-	c1 := pointsOnCircle(m.Vector{0, 2, 0}, ex, ez, numPoints, radius*1.5)
-	c2 := pointsOnCircle(m.Vector{0, 4, 0}, ex, ez, numPoints, radius)
 
-	triangles := joinCirclePoints([][]m.Vector{c0, c1, c2})
+	unitcircle := parametricFunction{
+		x: func(t float64) float64 { return math.Cos(t) },
+		y: func(t float64) float64 { return math.Sin(t) },
+		z: func(t float64) float64 { return 0.0 },
+	}
+
+	unitcircleDeriv := parametricFunction{
+		x: func(t float64) float64 { return -math.Sin(t) },
+		y: func(t float64) float64 { return math.Cos(t) },
+		z: func(t float64) float64 { return 0.0 },
+	}
+
+	unitcircle2ndDeriv := parametricFunction{
+		x: func(t float64) float64 { return -math.Cos(t) },
+		y: func(t float64) float64 { return -math.Sin(t) },
+		z: func(t float64) float64 { return 0.0 },
+	}
+
+	f := frenetFrame(unitcircle, unitcircleDeriv, unitcircle2ndDeriv)
+	p0, _, n0, b0 := f(0)
+	p1, _, n1, b1 := f(math.Pi / 8.0)
+	p2, _, n2, b2 := f(math.Pi / 4.0)
+	p3, _, n3, b3 := f(3 * math.Pi / 8.0)
+	p4, _, n4, b4 := f(math.Pi / 2.0)
+
+	c0 := pointsOnCircle(p0, n0, b0, numPoints, radius)
+	c1 := pointsOnCircle(p1, n1, b1, numPoints, radius)
+	c2 := pointsOnCircle(p2, n2, b2, numPoints, radius)
+	c3 := pointsOnCircle(p3, n3, b3, numPoints, radius)
+	c4 := pointsOnCircle(p4, n4, b4, numPoints, radius)
+
+	triangles := joinCirclePoints([][]m.Vector{c4, c3, c2, c1, c0})
 	complexObject := m.NewComplexObject(triangles)
 	boom := m.NewSharedObject(complexObject, translation.Mul(rotation))
 	scene.Add(boom)
@@ -88,4 +116,34 @@ func joinCirclePoints(pointLists [][]m.Vector) []m.Object {
 	}
 
 	return triangles
+}
+
+type parametricFunction struct {
+	x func(t float64) float64
+	y func(t float64) float64
+	z func(t float64) float64
+}
+
+func (f parametricFunction) Vector(t float64) m.Vector {
+	v := m.Vector{f.x(t), f.y(t), f.z(t)}
+	return v.Normalize()
+}
+
+func frenetFrame(f1, f2, f3 parametricFunction) func(t float64) (p, tangent, normal, binormal m.Vector) {
+	frenet1 := f2.Vector
+	frenet2 := func(t float64) m.Vector {
+		secondDeriv := f3.Vector(t)
+		e1 := frenet1(t)
+		return secondDeriv.Sub(e1.Times(secondDeriv.Dot(e1)))
+	}
+	frenet3 := func(t float64) m.Vector {
+		return frenet1(t).Cross(frenet2(t))
+	}
+	return func(t float64) (p, tangent, normal, binormal m.Vector) {
+		p = f1.Vector(t)
+		tangent = frenet1(t)
+		normal = frenet2(t)
+		binormal = frenet3(t)
+		return p, tangent, normal, binormal
+	}
 }
