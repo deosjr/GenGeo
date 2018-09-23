@@ -26,36 +26,78 @@ func main() {
 	l1 := m.NewDistantLight(m.Vector{1, -1, 1}, m.NewColor(255, 255, 255), 50)
 	scene.AddLights(l1)
 
-	m.SetBackgroundColor(m.NewColor(10, 30, 100))
+	m.SetBackgroundColor(m.NewColor(20, 20, 20))
 
-	var decayFunc = func(init, decay float64) func(float64) float64 {
-		return func(t float64) float64 {
-			i := init
-			if t/decay > i {
-				return 0.0
-			}
-			return i - t/decay
-		}
+	translation := m.Translate(m.Vector{0.5, 1.5, 2})
+	rotation := m.RotateY(math.Pi / 4.0)
+	transform := translation.Mul(rotation)
+
+	// Normal mapping example:
+	// Given a point m on the geometry, we can find the actual normal
+	// of the full geometry (a ring torus in this case)
+	// by finding the point p(t) on the parametric function closest to
+	// p and drawing the normal vector from p(t) to m
+
+	// This example takes the unit circle in x-y as a function
+	// and a ring torus as the parametric object.
+	// We find t by solving v.p'(t) = 0, the dot product of v and p'(t),
+	// where v is the vector m to p(t) (or vice versa, doesn't matter)
+	// and p'(t) is the tangent in p(t) given by its first derivative.
+	// The closest point p(t) to m is where v and p'(t) are perpendicular, hence the 0
+
+	// v.p'(t) = 0
+	// p'x(t)*(mx - px(t)) + p'y(t)*(my - py(t)) = 0
+	// -sin(t)*(mx - cos(t)) + cos(t)*(my - sin(t)) = 0
+	// -mx*sin(t) + sin(t)cos(t) + my*cost(t) - sin(t)cos(t) = 0
+	// my*cos(t) = mx*sin(t)
+	// my/mx = sin(t)/cos(t) = tan(t)
+	// t = arctan(my/mx)
+
+	diffMat := &m.DiffuseMaterial{m.NewColor(250, 200, 40)}
+	nmat := &m.NormalMappingMaterial{
+		WrappedMaterial: diffMat,
+		NormalFunc: func(si *m.SurfaceInteraction) m.Vector {
+			p := si.Point
+			// Note: without reversing translation this calculation is incorrect
+			p = transform.Inverse().Point(p)
+			// arctan range is -pi/2 , pi/2
+			// therefore only half the circle is shaded correctly
+			// using Atan2 with range -pi, pi instead
+			t := math.Atan2(p.Y, p.X)
+			pt := m.Vector{math.Cos(t), math.Sin(t), 0.0}
+			return m.VectorFromTo(pt, p).Normalize()
+		},
 	}
 
-	aFunc := decayFunc(0.5, 100.0)
-	bFunc := decayFunc(0.07, 1000.0)
-	helix := NewHelix(aFunc, bFunc)
+	unitcircle := parametricFunction{
+		x: func(t float64) float64 { return math.Cos(t) },
+		y: func(t float64) float64 { return math.Sin(t) },
+		z: func(t float64) float64 { return 0.0 },
+	}
+	unitcircleDeriv := parametricFunction{
+		x: func(t float64) float64 { return -math.Sin(t) },
+		y: func(t float64) float64 { return math.Cos(t) },
+		z: func(t float64) float64 { return 0.0 },
+	}
+	unitcircle2ndDeriv := parametricFunction{
+		x: func(t float64) float64 { return -math.Cos(t) },
+		y: func(t float64) float64 { return -math.Sin(t) },
+		z: func(t float64) float64 { return 0.0 },
+	}
+
 	po := parametricObject{
-		function:         helix.function(),
-		derivative:       helix.derivative(),
-		secondDerivative: helix.secondDerivative(),
-		radial:           newEllipse(decayFunc(0.5, 100.0), decayFunc(0.4, 100.0), 50),
-		numSteps:         100,
-		stepSize:         math.Pi / 8.0,
-		mat:              &m.DiffuseMaterial{m.NewColor(150, 100, 30)},
+		function:         unitcircle,
+		derivative:       unitcircleDeriv,
+		secondDerivative: unitcircle2ndDeriv,
+		radial:           newCircle(func(t float64) float64 { return 0.1 }, 10),
+		numSteps:         33,
+		stepSize:         math.Pi / 16.0,
+		mat:              nmat,
 	}
 	complexObject := po.build()
 
-	translation := m.Translate(m.Vector{0, 1, 1.5})
-	rotation := m.RotateY(-3 * math.Pi / 4.0).Mul(m.RotateX(-math.Pi / 2.0))
-	helix1 := m.NewSharedObject(complexObject, translation.Mul(rotation))
-	scene.Add(helix1)
+	c := m.NewSharedObject(complexObject, transform)
+	scene.Add(c)
 
 	scene.Precompute()
 
