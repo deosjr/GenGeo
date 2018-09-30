@@ -1,17 +1,17 @@
-package main
+package gen
 
 import "math"
 
 type helix struct {
 	a func(t float64) float64 //radius
-	b func(t float64) float64 //slope b/a
+	b func(t float64) float64 //slope b/a, pitch 2pi*b
 }
 
 func NewHelix(a, b func(t float64) float64) helix {
 	return helix{a: a, b: b}
 }
 
-func (h helix) function() parametricFunction {
+func (h helix) Function() ParametricFunction {
 	return parametricFunction{
 		x: func(t float64) float64 { return h.a(t) * math.Cos(t) },
 		y: func(t float64) float64 { return h.a(t) * math.Sin(t) },
@@ -19,7 +19,7 @@ func (h helix) function() parametricFunction {
 	}
 }
 
-func (h helix) derivative() parametricFunction {
+func (h helix) Derivative() ParametricFunction {
 	return parametricFunction{
 		x: func(t float64) float64 { return -h.a(t) * math.Sin(t) },
 		y: func(t float64) float64 { return h.a(t) * math.Cos(t) },
@@ -27,7 +27,7 @@ func (h helix) derivative() parametricFunction {
 	}
 }
 
-func (h helix) secondDerivative() parametricFunction {
+func (h helix) SecondDerivative() ParametricFunction {
 	return parametricFunction{
 		x: func(t float64) float64 { return -h.a(t) * math.Cos(t) },
 		y: func(t float64) float64 { return -h.a(t) * math.Sin(t) },

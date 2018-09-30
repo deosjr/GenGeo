@@ -1,4 +1,4 @@
-package main
+package gen
 
 import (
 	"math"
@@ -44,7 +44,7 @@ func TestPointsOnCircle(t *testing.T) {
 			},
 		},
 	} {
-		c := newCircle(tt.radius, tt.numPoints)
+		c := NewCircle(tt.radius, tt.numPoints)
 		got := c.points(tt.point, tt.normal, tt.binormal, tt.t)
 		if !compareVectors(got, tt.want) {
 			t.Errorf("%d): got %v want %v", i, got, tt.want)

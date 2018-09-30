@@ -6,6 +6,7 @@ import (
 
 	m "github.com/deosjr/GRayT/src/model"
 	"github.com/deosjr/GRayT/src/render"
+	"github.com/deosjr/GenGeo/gen"
 )
 
 var (
@@ -31,6 +32,9 @@ func main() {
 	translation := m.Translate(m.Vector{0.5, 1.5, 2})
 	rotation := m.RotateY(math.Pi / 4.0)
 	transform := translation.Mul(rotation)
+
+	// TODO: normal mapping as an option for parametric objects in general?
+	// solving the function in t is hard though..
 
 	// Normal mapping example:
 	// Given a point m on the geometry, we can find the actual normal
@@ -69,32 +73,28 @@ func main() {
 		},
 	}
 
-	unitcircle := parametricFunction{
-		x: func(t float64) float64 { return math.Cos(t) },
-		y: func(t float64) float64 { return math.Sin(t) },
-		z: func(t float64) float64 { return 0.0 },
-	}
-	unitcircleDeriv := parametricFunction{
-		x: func(t float64) float64 { return -math.Sin(t) },
-		y: func(t float64) float64 { return math.Cos(t) },
-		z: func(t float64) float64 { return 0.0 },
-	}
-	unitcircle2ndDeriv := parametricFunction{
-		x: func(t float64) float64 { return -math.Cos(t) },
-		y: func(t float64) float64 { return -math.Sin(t) },
-		z: func(t float64) float64 { return 0.0 },
-	}
+	unitcircle := gen.NewParametricFunction(
+		func(t float64) float64 { return math.Cos(t) },
+		func(t float64) float64 { return math.Sin(t) },
+		func(t float64) float64 { return 0.0 },
+	)
+	unitcircleDeriv := gen.NewParametricFunction(
+		func(t float64) float64 { return -math.Sin(t) },
+		func(t float64) float64 { return math.Cos(t) },
+		func(t float64) float64 { return 0.0 },
+	)
+	unitcircle2ndDeriv := gen.NewParametricFunction(
+		func(t float64) float64 { return -math.Cos(t) },
+		func(t float64) float64 { return -math.Sin(t) },
+		func(t float64) float64 { return 0.0 },
+	)
 
-	po := parametricObject{
-		function:         unitcircle,
-		derivative:       unitcircleDeriv,
-		secondDerivative: unitcircle2ndDeriv,
-		radial:           newCircle(func(t float64) float64 { return 0.1 }, 10),
-		numSteps:         33,
-		stepSize:         math.Pi / 16.0,
-		mat:              nmat,
-	}
-	complexObject := po.build()
+	fUnitCircle := gen.NewC2Differentiable(unitcircle, unitcircleDeriv, unitcircle2ndDeriv)
+
+	radial := gen.NewCircle(func(t float64) float64 { return 0.1 }, 10)
+	numSteps := 33
+	stepSize := math.Pi / 16.0
+	complexObject := gen.NewParametricObject(fUnitCircle, radial, numSteps, stepSize, nmat).Build()
 
 	c := m.NewSharedObject(complexObject, transform)
 	scene.Add(c)
