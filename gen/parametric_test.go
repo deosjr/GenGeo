@@ -45,7 +45,7 @@ func TestPointsOnCircle(t *testing.T) {
 		},
 	} {
 		c := NewCircle(tt.radius, tt.numPoints)
-		got := c.points(tt.point, tt.normal, tt.binormal, tt.t)
+		got := c.Points(tt.point, tt.normal, tt.binormal, tt.t)
 		if !compareVectors(got, tt.want) {
 			t.Errorf("%d): got %v want %v", i, got, tt.want)
 		}
@@ -78,7 +78,7 @@ func TestJoinCirclePoints(t *testing.T) {
 			},
 		},
 	} {
-		got := joinPoints(tt.points, nil)
+		got := JoinPoints(tt.points, nil)
 		if !reflect.DeepEqual(got, tt.want) {
 			t.Errorf("%d): got %v want %v", i, got, tt.want)
 		}

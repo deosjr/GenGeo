@@ -130,10 +130,10 @@ func (po parametricObject) Build() m.Object {
 	for i := 0; i < po.numSteps; i++ {
 		t := float64(i) * po.stepSize
 		p, _, normal, binormal := f(t)
-		points[i] = po.radial.points(p, normal, binormal, t)
+		points[i] = po.radial.Points(p, normal, binormal, t)
 	}
 
-	triangles := joinPoints(points, po.mat)
+	triangles := JoinPoints(points, po.mat)
 	return m.NewComplexObject(triangles)
 }
 
@@ -141,7 +141,7 @@ func (po parametricObject) Build() m.Object {
 // simplest example is a circle, drawing n points with radius r
 // this captures all regular convex polygonals by adjusting n
 type radial2d interface {
-	points(p, normal, binormal m.Vector, t float64) []m.Vector
+	Points(p, normal, binormal m.Vector, t float64) []m.Vector
 }
 
 type ellipse struct {
@@ -157,7 +157,7 @@ func NewCircle(radius func(t float64) float64, n int) ellipse {
 	return ellipse{radiusx: radius, radiusy: radius, numPoints: n}
 }
 
-func (e ellipse) points(p, normal, binormal m.Vector, t float64) []m.Vector {
+func (e ellipse) Points(p, normal, binormal m.Vector, t float64) []m.Vector {
 	angle := (1 / (float64(e.numPoints))) * (2 * math.Pi)
 	radiusx := e.radiusx(t)
 	radiusy := e.radiusy(t)
@@ -172,7 +172,7 @@ func (e ellipse) points(p, normal, binormal m.Vector, t float64) []m.Vector {
 }
 
 // assumes each list has the same number of points
-func joinPoints(pointLists [][]m.Vector, mat m.Material) []m.Object {
+func JoinPoints(pointLists [][]m.Vector, mat m.Material) []m.Object {
 	numLists := len(pointLists)
 	numPoints := len(pointLists[0])
 	triangles := make([]m.Object, 2*numPoints*(numLists-1))
