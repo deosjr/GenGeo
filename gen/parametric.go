@@ -144,31 +144,52 @@ type radial2d interface {
 	Points(p, normal, binormal m.Vector, t float64) []m.Vector
 }
 
-type ellipse struct {
+type radialEllipse struct {
 	radiusx   func(t float64) float64
 	radiusy   func(t float64) float64
 	numPoints int
 }
 
-func NewEllipse(a, b func(t float64) float64, n int) ellipse {
-	return ellipse{radiusx: a, radiusy: b, numPoints: n}
-}
-func NewCircle(radius func(t float64) float64, n int) ellipse {
-	return ellipse{radiusx: radius, radiusy: radius, numPoints: n}
+type ellipse struct {
+	radiusx float64
+	radiusy float64
+	center  m.Vector
 }
 
-func (e ellipse) Points(p, normal, binormal m.Vector, t float64) []m.Vector {
-	angle := (1 / (float64(e.numPoints))) * (2 * math.Pi)
-	radiusx := e.radiusx(t)
-	radiusy := e.radiusy(t)
-	l := make([]m.Vector, e.numPoints)
-	for i := 0; i < e.numPoints; i++ {
-		xVector := normal.Times(radiusx * math.Cos(float64(i)*angle))
-		yVector := binormal.Times(radiusy * math.Sin(float64(i)*angle))
-		newP := p.Add(xVector).Add(yVector)
-		l[i] = newP
+func NewRadialEllipse(a, b func(t float64) float64, n int) radialEllipse {
+	return radialEllipse{radiusx: a, radiusy: b, numPoints: n}
+}
+func NewRadialCircle(radius func(t float64) float64, n int) radialEllipse {
+	return radialEllipse{radiusx: radius, radiusy: radius, numPoints: n}
+}
+func NewEllipse(c m.Vector, a, b float64) ellipse {
+	return ellipse{center: c, radiusx: a, radiusy: b}
+}
+func NewCircle(c m.Vector, r float64) ellipse {
+	return ellipse{center: c, radiusx: r, radiusy: r}
+}
+
+func (e ellipse) Point(phase float64, xaxis, yaxis m.Vector) m.Vector {
+	xVector := xaxis.Times(e.radiusx * math.Cos(phase))
+	yVector := yaxis.Times(e.radiusy * math.Sin(phase))
+	return e.center.Add(xVector).Add(yVector)
+}
+
+// PointsPhaseRange returns n points on an ellipse between phase min and max
+func (e ellipse) PointsPhaseRange(minPhase, maxPhase float64, n int, xaxis, yaxis m.Vector) []m.Vector {
+	diff := maxPhase - minPhase
+	angle := (1 / float64(n-1)) * diff
+	l := make([]m.Vector, n)
+	for i := 0; i < n; i++ {
+		phase := math.Mod(minPhase+float64(i)*angle, 2*math.Pi)
+		l[i] = e.Point(phase, xaxis, yaxis)
 	}
 	return l
+}
+
+func (re radialEllipse) Points(p, normal, binormal m.Vector, t float64) []m.Vector {
+	e := NewEllipse(p, re.radiusx(t), re.radiusy(t))
+	return e.PointsPhaseRange(0, 2*math.Pi, re.numPoints, normal, binormal)
 }
 
 // assumes each list has the same number of points

@@ -91,7 +91,7 @@ func main() {
 
 	fUnitCircle := gen.NewC2Differentiable(unitcircle, unitcircleDeriv, unitcircle2ndDeriv)
 
-	radial := gen.NewCircle(func(t float64) float64 { return 0.1 }, 10)
+	radial := gen.NewRadialCircle(func(t float64) float64 { return 0.1 }, 10)
 	numSteps := 33
 	stepSize := math.Pi / 16.0
 	complexObject := gen.NewParametricObject(fUnitCircle, radial, numSteps, stepSize, nmat).Build()
