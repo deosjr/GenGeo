@@ -150,65 +150,14 @@ type radialEllipse struct {
 	numPoints int
 }
 
-type ellipse struct {
-	radiusx float64
-	radiusy float64
-	center  m.Vector
-}
-
 func NewRadialEllipse(a, b func(t float64) float64, n int) radialEllipse {
 	return radialEllipse{radiusx: a, radiusy: b, numPoints: n}
 }
 func NewRadialCircle(radius func(t float64) float64, n int) radialEllipse {
 	return radialEllipse{radiusx: radius, radiusy: radius, numPoints: n}
 }
-func NewEllipse(c m.Vector, a, b float64) ellipse {
-	return ellipse{center: c, radiusx: a, radiusy: b}
-}
-func NewCircle(c m.Vector, r float64) ellipse {
-	return ellipse{center: c, radiusx: r, radiusy: r}
-}
-
-func (e ellipse) Point(phase float64, xaxis, yaxis m.Vector) m.Vector {
-	xVector := xaxis.Times(e.radiusx * math.Cos(phase))
-	yVector := yaxis.Times(e.radiusy * math.Sin(phase))
-	return e.center.Add(xVector).Add(yVector)
-}
-
-// PointsPhaseRange returns n points on an ellipse between phase min and max
-func (e ellipse) PointsPhaseRange(minPhase, maxPhase float64, n int, xaxis, yaxis m.Vector) []m.Vector {
-	diff := maxPhase - minPhase
-	angle := (1 / float64(n-1)) * diff
-	l := make([]m.Vector, n)
-	for i := 0; i < n; i++ {
-		phase := math.Mod(minPhase+float64(i)*angle, 2*math.Pi)
-		l[i] = e.Point(phase, xaxis, yaxis)
-	}
-	return l
-}
 
 func (re radialEllipse) Points(p, normal, binormal m.Vector, t float64) []m.Vector {
 	e := NewEllipse(p, re.radiusx(t), re.radiusy(t))
 	return e.PointsPhaseRange(0, 2*math.Pi, re.numPoints, normal, binormal)
-}
-
-// assumes each list has the same number of points
-func JoinPoints(pointLists [][]m.Vector, mat m.Material) []m.Object {
-	numLists := len(pointLists)
-	numPoints := len(pointLists[0])
-	triangles := make([]m.Object, 2*numPoints*(numLists-1))
-
-	for i := 0; i < numLists-1; i++ {
-		offset := 2 * numPoints * i
-		c1 := pointLists[i]
-		c2 := pointLists[i+1]
-
-		triangles[offset] = m.NewTriangle(c1[numPoints-1], c2[numPoints-1], c1[0], mat)
-		triangles[offset+1] = m.NewTriangle(c2[numPoints-1], c2[0], c1[0], mat)
-		for j := 0; j < numPoints-1; j++ {
-			triangles[offset+(j+1)*2] = m.NewTriangle(c1[j], c2[j], c1[j+1], mat)
-			triangles[offset+(j+1)*2+1] = m.NewTriangle(c2[j], c2[j+1], c1[j+1], mat)
-		}
-	}
-	return triangles
 }
