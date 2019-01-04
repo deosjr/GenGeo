@@ -45,7 +45,7 @@ type ExtrusionFace struct {
 	Material m.Material
 }
 
-func Extrude(ef ExtrusionFace, extrusionVector m.Vector) m.Object {
+func (ef ExtrusionFace) Extrude(extrusionVector m.Vector) m.Object {
 	triangles := []m.Object{}
 	for _, t := range ef.Front {
 		triangles = append(triangles, m.NewTriangle(t.P0, t.P1, t.P2, ef.Material))
@@ -66,6 +66,31 @@ func Extrude(ef ExtrusionFace, extrusionVector m.Vector) m.Object {
 			ex[i] = p.Add(extrusionVector)
 		}
 		triangles = append(triangles, JoinPoints([][]m.Vector{list, ex}, ef.Material)...)
+	}
+	return m.NewComplexObject(triangles)
+}
+
+func (ef ExtrusionFace) ExtrudeNonCircular(extrusionVector m.Vector) m.Object {
+	triangles := []m.Object{}
+	for _, t := range ef.Front {
+		triangles = append(triangles, m.NewTriangle(t.P0, t.P1, t.P2, ef.Material))
+		p0, p1, p2 := t.P0.Add(extrusionVector), t.P1.Add(extrusionVector), t.P2.Add(extrusionVector)
+		backT := m.NewTriangle(p2, p1, p0, ef.Material)
+		triangles = append(triangles, backT)
+	}
+	for _, list := range ef.Outer {
+		ex := make([]m.Vector, len(list))
+		for i, p := range list {
+			ex[i] = p.Add(extrusionVector)
+		}
+		triangles = append(triangles, JoinPointsNonCircular([][]m.Vector{list, ex}, ef.Material)...)
+	}
+	for _, list := range ef.Inner {
+		ex := make([]m.Vector, len(list))
+		for i, p := range list {
+			ex[i] = p.Add(extrusionVector)
+		}
+		triangles = append(triangles, JoinPointsNonCircular([][]m.Vector{list, ex}, ef.Material)...)
 	}
 	return m.NewComplexObject(triangles)
 }

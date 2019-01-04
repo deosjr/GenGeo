@@ -57,3 +57,18 @@ func JoinPointsNonCircular(pointLists [][]m.Vector, mat m.Material) []m.Object {
 	}
 	return triangles
 }
+
+func CenterPointsOnOrigin(points []m.Vector) []m.Vector {
+	centroid := m.Vector{0, 0, 0}
+	for _, p := range points {
+		centroid = centroid.Add(p)
+	}
+	centroid = centroid.Times(1.0 / float64(len(points)))
+	objectToOrigin := m.Translate(centroid).Inverse()
+
+	centered := make([]m.Vector, len(points))
+	for i, p := range points {
+		centered[i] = objectToOrigin.Point(p)
+	}
+	return centered
+}

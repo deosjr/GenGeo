@@ -29,14 +29,20 @@ func main() {
 
 	m.SetBackgroundColor(m.NewColor(20, 20, 20))
 
-	translation := m.Translate(m.Vector{0.5, 1.5, 2})
-	rotation := m.RotateY(math.Pi)
+	translation := m.Translate(m.Vector{0, 2, 1.5})
+	rotation := m.RotateY(-math.Pi / 16.0)
 	transform := translation.Mul(rotation)
 
-	diffMat := &m.DiffuseMaterial{m.NewColor(250, 200, 40)}
+	diffMat := &m.DiffuseMaterial{m.NewColor(250, 0, 0)}
 
-	s := gen.NewSphere(m.Vector{0, 0, 0}, 1.0)
-	c := s.NormalMappedSphere(transform, diffMat, 5)
+	// points := gen.QuadraticKochIsland(4)
+	// points := gen.DragonCurve(10)
+	points := gen.HexagonalGosperCurve(3)
+	points = gen.CenterPointsOnOrigin(points)
+
+	radial := gen.NewRadialCircle(func(t float64) float64 { return 0.02 }, 20)
+	o := gen.BuildFromPoints(radial, points, diffMat)
+	c := m.NewSharedObject(o, transform)
 	scene.Add(c)
 
 	scene.Precompute()

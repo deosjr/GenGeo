@@ -161,3 +161,25 @@ func (re radialEllipse) Points(p, normal, binormal m.Vector, t float64) []m.Vect
 	e := NewEllipse(p, re.radiusx(t), re.radiusy(t))
 	return e.PointsPhaseRange(0, 2*math.Pi, re.numPoints, normal, binormal)
 }
+
+// assumption: radial does not depend on t
+// assumption for now: points live in the XY plane
+// TODO: this assumption should be removed
+func BuildFromPoints(radial radial2d, points []m.Vector, mat m.Material) m.Object {
+	ez := m.Vector{0, 0, 1}
+	ey := m.Vector{0, 1, 0}
+	radialPoints := make([][]m.Vector, len(points))
+
+	radialPoints[0] = radial.Points(points[0], ez, ey, 0)
+	for i := 1; i < len(points)-1; i++ {
+		p := points[i]
+		prev := points[i-1]
+		next := points[i+1]
+		binormal := ez.Cross(m.VectorFromTo(next, prev).Normalize())
+		radialPoints[i] = radial.Points(p, ez, binormal, 0)
+	}
+	radialPoints[len(points)-1] = radial.Points(points[len(points)-1], ez, ey, 0)
+
+	triangles := JoinPoints(radialPoints, mat)
+	return m.NewComplexObject(triangles)
+}
