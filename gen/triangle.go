@@ -36,3 +36,24 @@ func JoinPoints(pointLists [][]m.Vector, mat m.Material) []m.Object {
 	}
 	return triangles
 }
+
+// as JoinPoints, but the points are not considered to form a loop
+// therefore the first and last points will not be linked up
+// assumes each list has the same number of points
+func JoinPointsNonCircular(pointLists [][]m.Vector, mat m.Material) []m.Object {
+	numLists := len(pointLists)
+	numPoints := len(pointLists[0])
+	triangles := make([]m.Object, 2*(numPoints-1)*(numLists-1))
+
+	for i := 0; i < numLists-1; i++ {
+		offset := 2 * numPoints * i
+		c1 := pointLists[i]
+		c2 := pointLists[i+1]
+
+		for j := 0; j < numPoints-1; j++ {
+			triangles[offset+j*2] = m.NewTriangle(c1[j], c2[j], c1[j+1], mat)
+			triangles[offset+j*2+1] = m.NewTriangle(c2[j], c2[j+1], c1[j+1], mat)
+		}
+	}
+	return triangles
+}
