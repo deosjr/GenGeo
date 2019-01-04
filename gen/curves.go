@@ -46,6 +46,27 @@ func NewSphere(c m.Vector, r float64) sphere {
 	return sphere{center: c, radius: r}
 }
 
+// NOTE: sharing multiple of these spheres is not optimal since nmat cannot be shared nicely
+// this function included mainly to document a use of normal mapping for now
+func (s sphere) NormalMappedSphere(transform m.Transform, mat m.Material, n int) m.Object {
+	nmat := &m.NormalMappingMaterial{
+		WrappedMaterial: mat,
+		NormalFunc: func(si *m.SurfaceInteraction) m.Vector {
+			p := si.Point
+			// Note: without reversing translation this calculation is incorrect
+			p = transform.Inverse().Point(p)
+			return m.VectorFromTo(s.center, p).Normalize()
+		},
+	}
+	triangles := s.Triangulate(n, nmat)
+	objs := make([]m.Object, len(triangles))
+	for i, t := range triangles {
+		objs[i] = t
+	}
+	complexObject := m.NewComplexObject(objs)
+	return m.NewSharedObject(complexObject, transform)
+}
+
 // triangulate starting from an octahedron approximating a sphere
 // in n iterations of recursive subdivision
 func (s sphere) Triangulate(n int, mat m.Material) []m.Triangle {

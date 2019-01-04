@@ -34,24 +34,9 @@ func main() {
 	transform := translation.Mul(rotation)
 
 	diffMat := &m.DiffuseMaterial{m.NewColor(250, 200, 40)}
-	nmat := &m.NormalMappingMaterial{
-		WrappedMaterial: diffMat,
-		NormalFunc: func(si *m.SurfaceInteraction) m.Vector {
-			p := si.Point
-			// Note: without reversing translation this calculation is incorrect
-			p = transform.Inverse().Point(p)
-			return m.VectorFromTo(m.Vector{0, 0, 0}, p).Normalize()
-		},
-	}
 
 	s := gen.NewSphere(m.Vector{0, 0, 0}, 1.0)
-	triangles := s.Triangulate(5, nmat)
-	objs := make([]m.Object, len(triangles))
-	for i, t := range triangles {
-		objs[i] = t
-	}
-	complexObject := m.NewComplexObject(objs)
-	c := m.NewSharedObject(complexObject, transform)
+	c := s.NormalMappedSphere(transform, diffMat, 5)
 	scene.Add(c)
 
 	scene.Precompute()
