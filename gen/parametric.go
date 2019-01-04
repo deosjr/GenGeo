@@ -163,8 +163,7 @@ func (re radialEllipse) Points(p, normal, binormal m.Vector, t float64) []m.Vect
 }
 
 // assumption: radial does not depend on t
-// assumption for now: points live in the XY plane
-// TODO: this assumption should be removed
+// ez taken as random vector to calculate normal/binormal
 func BuildFromPoints(radial radial2d, points []m.Vector, mat m.Material) m.Object {
 	ez := m.Vector{0, 0, 1}
 	ey := m.Vector{0, 1, 0}
@@ -176,7 +175,9 @@ func BuildFromPoints(radial radial2d, points []m.Vector, mat m.Material) m.Objec
 		prev := points[i-1]
 		next := points[i+1]
 		binormal := ez.Cross(m.VectorFromTo(next, prev).Normalize())
-		radialPoints[i] = radial.Points(p, ez, binormal, 0)
+		// for points in XY plane, this should equate to ez
+		normal := binormal.Cross(m.VectorFromTo(p, next).Normalize())
+		radialPoints[i] = radial.Points(p, normal, binormal, 0)
 	}
 	radialPoints[len(points)-1] = radial.Points(points[len(points)-1], ez, ey, 0)
 
