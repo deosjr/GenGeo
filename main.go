@@ -37,7 +37,9 @@ func main() {
 
 	// points := gen.QuadraticKochIsland(4)
 	// points := gen.DragonCurve(10)
-	points := gen.HexagonalGosperCurve(3)
+	// points := gen.HexagonalGosperCurve(3)
+	// points := gen.PeanoCurve(2)
+	points := gen.HilbertCurve3D(3)
 	points = gen.CenterPointsOnOrigin(points)
 
 	radial := gen.NewRadialCircle(func(t float64) float64 { return 0.02 }, 20)
