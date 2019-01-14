@@ -159,7 +159,9 @@ func NewRadialCircle(radius func(t float64) float64, n int) radialEllipse {
 
 func (re radialEllipse) Points(p, normal, binormal m.Vector, t float64) []m.Vector {
 	e := NewEllipse(p, re.radiusx(t), re.radiusy(t))
-	return e.PointsPhaseRange(0, 2*math.Pi, re.numPoints, normal, binormal)
+	// PointsPhaseRange is inclusive on both ends, dont want phase 0 (=2pi) twice
+	inclusive := e.PointsPhaseRange(0, 2*math.Pi, re.numPoints+1, normal, binormal)
+	return inclusive[:len(inclusive)-1]
 }
 
 // assumption: radial does not depend on t

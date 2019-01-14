@@ -44,7 +44,7 @@ func TestPointsOnCircle(t *testing.T) {
 			},
 		},
 	} {
-		c := NewCircle(tt.radius, tt.numPoints)
+		c := NewRadialCircle(tt.radius, tt.numPoints)
 		got := c.Points(tt.point, tt.normal, tt.binormal, tt.t)
 		if !compareVectors(got, tt.want) {
 			t.Errorf("%d): got %v want %v", i, got, tt.want)
