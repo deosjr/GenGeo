@@ -38,11 +38,10 @@ func main() {
 	// points := gen.QuadraticKochIsland(4)
 	// points := gen.DragonCurve(10)
 	// points := gen.HexagonalGosperCurve(3)
-	// points := gen.PeanoCurve(2)
-	points := gen.HilbertCurve3D(3)
-	points = gen.CenterPointsOnOrigin(points)
-
-	radial := gen.NewRadialCircle(func(t float64) float64 { return 0.02 }, 20)
+	//answer := gen.PeanoCurve(1)
+	answer := gen.HilbertCurve3D(3)
+	points := gen.CenterPointsOnOrigin(answer.Points)
+	radial := gen.NewRadialCircle(func(t float64) float64 { return 0.02 }, 10)
 	o := gen.BuildFromPoints(radial, points, diffMat)
 	c := m.NewSharedObject(o, transform)
 	scene.Add(c)
@@ -55,4 +54,64 @@ func main() {
 	camera.LookAt(from, to, ey)
 	film := render.Render(scene, numWorkers)
 	film.SaveAsPNG("out.png")
+}
+
+func SaveObj(o m.Object) string {
+	triangles := trianglesFromObject(o)
+	vertices := []m.Vector{}
+	vertexMap := map[m.Vector]int64{}
+	faces := make([]m.Face, len(triangles))
+	for i, t := range triangles {
+		v0, ok := vertexMap[t.P0]
+		if !ok {
+			v0 = int64(len(vertexMap)) + 1
+			vertexMap[t.P0] = v0
+			vertices = append(vertices, t.P0)
+		}
+		v1, ok := vertexMap[t.P1]
+		if !ok {
+			v1 = int64(len(vertexMap)) + 1
+			vertexMap[t.P1] = v1
+			vertices = append(vertices, t.P1)
+		}
+		v2, ok := vertexMap[t.P2]
+		if !ok {
+			v2 = int64(len(vertexMap)) + 1
+			vertexMap[t.P2] = v2
+			vertices = append(vertices, t.P2)
+		}
+		// TODO: coordinate handedness!
+		faces[i] = m.Face{v2, v1, v0}
+	}
+
+	s := ""
+	for _, v := range vertices {
+		s += fmt.Sprintf("v %f %f %f\n", v.X, v.Y, v.Z)
+	}
+	for _, f := range faces {
+		s += fmt.Sprintf("f %d %d %d\n", f.V0, f.V1, f.V2)
+	}
+	return s
+}
+
+func trianglesFromObject(objects ...m.Object) []m.Triangle {
+	triangles := []m.Triangle{}
+	for _, o := range objects {
+		switch t := o.(type) {
+		case m.Triangle:
+			triangles = append(triangles, t)
+		case *m.ComplexObject:
+			triangles = append(triangles, trianglesFromObject(t.Objects()...)...)
+		case *m.SharedObject:
+			trs := trianglesFromObject(t.Object)
+			for _, tr := range trs {
+				p0 := t.ObjectToWorld.Point(tr.P0)
+				p1 := t.ObjectToWorld.Point(tr.P1)
+				p2 := t.ObjectToWorld.Point(tr.P2)
+				newTr := m.NewTriangle(p0, p1, p2, tr.Material)
+				triangles = append(triangles, newTr)
+			}
+		}
+	}
+	return triangles
 }

@@ -34,7 +34,6 @@ func NewC2Differentiable(f1, f2, f3 ParametricFunction) c2Differentiable {
 		secondDerivative: f3,
 	}
 }
-
 func (c c2) Function() ParametricFunction {
 	return c.function
 }
@@ -166,23 +165,84 @@ func (re radialEllipse) Points(p, normal, binormal m.Vector, t float64) []m.Vect
 
 // assumption: radial does not depend on t
 // ez taken as random vector to calculate normal/binormal
-func BuildFromPoints(radial radial2d, points []m.Vector, mat m.Material) m.Object {
-	ez := m.Vector{0, 0, 1}
-	ey := m.Vector{0, 1, 0}
+// TODO: random normal leads to crossed bindings
+// new assumption: radial is always a circle with the same radius
+func BuildFromPoints(radial radialEllipse, points []m.Vector, mat m.Material) m.Object {
+	normal := m.Vector{0, 0, -1}
+	binormal := m.Vector{0, 1, 0}
 	radialPoints := make([][]m.Vector, len(points))
+	radius := radial.radiusx(0)
 
-	radialPoints[0] = radial.Points(points[0], ez, ey, 0)
+	radialPoints[0] = radial.Points(points[0], normal, binormal, 0)
 	for i := 1; i < len(points)-1; i++ {
 		p := points[i]
 		prev := points[i-1]
 		next := points[i+1]
-		binormal := ez.Cross(m.VectorFromTo(next, prev).Normalize())
-		// for points in XY plane, this should equate to ez
-		normal := binormal.Cross(m.VectorFromTo(p, next).Normalize())
+		prevnext := m.VectorFromTo(prev, next).Normalize()
+		n_temp := m.Vector{0, 0, 1}.Cross(prevnext).Normalize()
+		b_temp := prevnext.Cross(n_temp).Normalize()
+
+		//temp normal/binormal are now semirandom vectors in the circle slice between points
+		//we can translate the previous normal/binormal on that circle using a plane intersection test
+
+		planenormal := n_temp.Cross(b_temp).Normalize()
+		rdirection := m.VectorFromTo(prev, p).Normalize()
+		rorigin := prev.Add(normal.Times(radius))
+		ln := rdirection.Dot(planenormal)
+		d := m.VectorFromTo(rorigin, p).Dot(planenormal) / ln
+		npoint := rorigin.Add(rdirection.Times(d))
+		normal = m.VectorFromTo(p, npoint).Normalize()
+
+		rorigin = prev.Add(binormal.Times(radius))
+		d = m.VectorFromTo(rorigin, p).Dot(planenormal) / ln
+		bpoint := rorigin.Add(rdirection.Times(d))
+		binormal = m.VectorFromTo(p, bpoint).Normalize()
+
 		radialPoints[i] = radial.Points(p, normal, binormal, 0)
 	}
-	radialPoints[len(points)-1] = radial.Points(points[len(points)-1], ez, ey, 0)
+	radialPoints[len(points)-1] = radial.Points(points[len(points)-1], normal, binormal, 0)
 
 	triangles := JoinPoints(radialPoints, mat)
 	return m.NewComplexObject(triangles)
+}
+
+func BuildFromPointsWithReference(radial radial2d, points []m.Vector, normals []m.Vector, binormals []m.Vector, mat m.Material) m.Object {
+	radialPoints := make([][]m.Vector, len(points))
+
+	normal := normals[0]
+	binormal := binormals[0]
+	for i := 0; i < len(points)-1; i++ {
+		p := points[i]
+		normal = normals[i+1].Add(normals[i]).Normalize()
+		binormal = binormals[i+1].Add(binormals[i]).Normalize()
+		radialPoints[i] = radial.Points(p, normal, binormal, 0)
+	}
+
+	radialPoints[len(points)-1] = radial.Points(points[len(points)-1], normal, binormal, 0)
+
+	triangles := JoinPoints(radialPoints, mat)
+	return m.NewComplexObject(triangles)
+}
+
+// build path of points: node object at each point, radial around vertices
+// assumption: points are on a line
+func BuildNodesVertices(node m.Object, radial radial2d, points []m.Vector, mat m.Material) m.Object {
+	objects := []m.Object{}
+	ez := m.Vector{0, 0, 1}
+
+	for i := 0; i < len(points)-1; i++ {
+		p := points[i]
+		next := points[i+1]
+		objects = append(objects, m.NewSharedObject(node, m.Translate(p)))
+		heading := m.VectorFromTo(p, next).Normalize()
+		normal := ez.Cross(heading).Normalize()
+		binormal := normal.Cross(heading)
+		radialP := radial.Points(p, normal, binormal, 0)
+		radialNext := radial.Points(next, normal, binormal, 0)
+		pointsList := [][]m.Vector{radialP, radialNext}
+		objects = append(objects, JoinPoints(pointsList, mat)...)
+	}
+	translation := m.Translate(points[len(points)-1])
+	objects = append(objects, m.NewSharedObject(node, translation))
+	return m.NewComplexObject(objects)
 }

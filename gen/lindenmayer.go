@@ -21,12 +21,18 @@ type Lsystem struct {
 	Productions map[rune]string
 }
 
+type LsystemAnswer struct {
+	Points    []m.Vector
+	Normals   []m.Vector
+	Binormals []m.Vector
+}
+
 // rewrite axiom n times according to productions
 // then draw points from the result string
 // d is length of initial line drawn by F at iteration 0
 // dFactor is the factor by which d shrinks every iteration
 // delta is the size of angle change by orientation changes
-func (l Lsystem) Evaluate(n int, d, dFactor, delta float64) []m.Vector {
+func (l Lsystem) Evaluate(n int, d, dFactor, delta float64) LsystemAnswer {
 	s := l.Axiom
 	for i := 0; i < n; i++ {
 		s = l.rewrite(s)
@@ -48,18 +54,22 @@ func (l Lsystem) rewrite(s string) string {
 	return newS
 }
 
-func (l Lsystem) draw(s string, d, delta float64) []m.Vector {
+func (l Lsystem) draw(s string, d, delta float64) LsystemAnswer {
 	// turtle starts in origin facing up
 	origin := m.Vector{0, 0, 0}
 	H, L, U := m.Vector{0, 1, 0}, m.Vector{1, 0, 0}, m.Vector{0, 0, 1}
-	t := turtle{origin, m.Vector{0, 1, 0}.Times(d)}
+	t := turtle{origin, H.Times(d)}
 
 	points := []m.Vector{t.pos}
+	normals := []m.Vector{U}
+	binormals := []m.Vector{L}
 	for _, r := range s {
 		switch r {
 		case 'F', 'G', 'L', 'R':
 			t.pos = t.pos.Add(t.heading)
 			points = append(points, t.pos)
+			normals = append(normals, U)
+			binormals = append(binormals, L)
 		case '+':
 			t.heading, L, H = transformAxes(delta, U, t.heading, L, H)
 		case '-':
@@ -76,7 +86,11 @@ func (l Lsystem) draw(s string, d, delta float64) []m.Vector {
 			t.heading, L, H = transformAxes(math.Pi, U, t.heading, L, H)
 		}
 	}
-	return points
+	return LsystemAnswer{
+		Points:    points,
+		Normals:   normals,
+		Binormals: binormals,
+	}
 }
 
 // rotate turtle heading and the other axes delta degrees around the principal axis
@@ -89,7 +103,7 @@ func transformAxes(delta float64, rotationAxis, th, n, bn m.Vector) (m.Vector, m
 }
 
 // some famous 2D L-system examples from the book:
-func QuadraticKochIsland(n int) []m.Vector {
+func QuadraticKochIsland(n int) LsystemAnswer {
 	l := Lsystem{
 		Axiom: "F-F-F-F",
 		Productions: map[rune]string{
@@ -99,7 +113,7 @@ func QuadraticKochIsland(n int) []m.Vector {
 	return l.Evaluate(n, 1.0, 0.25, math.Pi/2.0)
 }
 
-func DragonCurve(n int) []m.Vector {
+func DragonCurve(n int) LsystemAnswer {
 	l := Lsystem{
 		Axiom: "F",
 		Productions: map[rune]string{
@@ -110,7 +124,7 @@ func DragonCurve(n int) []m.Vector {
 	return l.Evaluate(n, 1.0, 0.75, math.Pi/2.0)
 }
 
-func HexagonalGosperCurve(n int) []m.Vector {
+func HexagonalGosperCurve(n int) LsystemAnswer {
 	l := Lsystem{
 		Axiom: "F",
 		Productions: map[rune]string{
@@ -121,7 +135,7 @@ func HexagonalGosperCurve(n int) []m.Vector {
 	return l.Evaluate(n, 1.0, 0.5, math.Pi/3.0)
 }
 
-func PeanoCurve(n int) []m.Vector {
+func PeanoCurve(n int) LsystemAnswer {
 	l := Lsystem{
 		Axiom: "L",
 		Productions: map[rune]string{
@@ -133,7 +147,7 @@ func PeanoCurve(n int) []m.Vector {
 }
 
 // and some 3D examples:
-func HilbertCurve3D(n int) []m.Vector {
+func HilbertCurve3D(n int) LsystemAnswer {
 	l := Lsystem{
 		Axiom: "A",
 		Productions: map[rune]string{
