@@ -27,9 +27,9 @@ func main() {
 	l1 := m.NewDistantLight(m.Vector{1, -1, 1}, m.NewColor(255, 255, 255), 50)
 	scene.AddLights(l1)
 
-	m.SetBackgroundColor(m.NewColor(20, 20, 20))
+	m.SetBackgroundColor(m.NewColor(200, 200, 200))
 
-	translation := m.Translate(m.Vector{0, 2, 1.5})
+	translation := m.Translate(m.Vector{0, 0.5, 1.5})
 	rotation := m.RotateY(-math.Pi / 16.0)
 	transform := translation.Mul(rotation)
 
@@ -38,13 +38,23 @@ func main() {
 	// points := gen.QuadraticKochIsland(4)
 	// points := gen.DragonCurve(10)
 	// points := gen.HexagonalGosperCurve(3)
-	//answer := gen.PeanoCurve(1)
-	answer := gen.HilbertCurve3D(3)
-	points := gen.CenterPointsOnOrigin(answer.Points)
-	radial := gen.NewRadialCircle(func(t float64) float64 { return 0.02 }, 10)
-	o := gen.BuildFromPoints(radial, points, diffMat)
-	c := m.NewSharedObject(o, transform)
-	scene.Add(c)
+	// points := gen.PeanoCurve(1)
+	// points := gen.HilbertCurve3D(3)
+	segments := gen.Branch2D(7)
+	objects := []m.Object{}
+	for _, points := range segments {
+		if len(points) == 1 {
+			continue
+		}
+
+		radial := gen.NewRadialCircle(func(t float64) float64 { return 0.005 }, 10)
+		o := gen.BuildFromPoints(radial, points, diffMat)
+		objects = append(objects, o)
+		shared := m.NewSharedObject(o, transform)
+		scene.Add(shared)
+	}
+
+	//points := gen.CenterPointsOnOrigin(s)
 
 	scene.Precompute()
 

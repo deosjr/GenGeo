@@ -206,24 +206,6 @@ func BuildFromPoints(radial radialEllipse, points []m.Vector, mat m.Material) m.
 	return m.NewComplexObject(triangles)
 }
 
-func BuildFromPointsWithReference(radial radial2d, points []m.Vector, normals []m.Vector, binormals []m.Vector, mat m.Material) m.Object {
-	radialPoints := make([][]m.Vector, len(points))
-
-	normal := normals[0]
-	binormal := binormals[0]
-	for i := 0; i < len(points)-1; i++ {
-		p := points[i]
-		normal = normals[i+1].Add(normals[i]).Normalize()
-		binormal = binormals[i+1].Add(binormals[i]).Normalize()
-		radialPoints[i] = radial.Points(p, normal, binormal, 0)
-	}
-
-	radialPoints[len(points)-1] = radial.Points(points[len(points)-1], normal, binormal, 0)
-
-	triangles := JoinPoints(radialPoints, mat)
-	return m.NewComplexObject(triangles)
-}
-
 // build path of points: node object at each point, radial around vertices
 // assumption: points are on a line
 func BuildNodesVertices(node m.Object, radial radial2d, points []m.Vector, mat m.Material) m.Object {
