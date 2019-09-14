@@ -17,10 +17,10 @@ func subdivide(t m.Triangle) []m.Triangle {
 }
 
 // assumes each list has the same number of points
-func JoinPoints(pointLists [][]m.Vector, mat m.Material) []m.Object {
+func JoinPoints(pointLists [][]m.Vector, mat m.Material) []m.Triangle {
 	numLists := len(pointLists)
 	numPoints := len(pointLists[0])
-	triangles := make([]m.Object, 2*numPoints*(numLists-1))
+	triangles := make([]m.Triangle, 2*numPoints*(numLists-1))
 
 	for i := 0; i < numLists-1; i++ {
 		offset := 2 * numPoints * i
@@ -40,10 +40,10 @@ func JoinPoints(pointLists [][]m.Vector, mat m.Material) []m.Object {
 // as JoinPoints, but the points are not considered to form a loop
 // therefore the first and last points will not be linked up
 // assumes each list has the same number of points
-func JoinPointsNonCircular(pointLists [][]m.Vector, mat m.Material) []m.Object {
+func JoinPointsNonCircular(pointLists [][]m.Vector, mat m.Material) []m.Triangle {
 	numLists := len(pointLists)
 	numPoints := len(pointLists[0])
-	triangles := make([]m.Object, 2*(numPoints-1)*(numLists-1))
+	triangles := make([]m.Triangle, 2*(numPoints-1)*(numLists-1))
 
 	for i := 0; i < numLists-1; i++ {
 		offset := 2 * numPoints * i

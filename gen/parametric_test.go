@@ -55,18 +55,18 @@ func TestPointsOnCircle(t *testing.T) {
 func TestJoinCirclePoints(t *testing.T) {
 	for i, tt := range []struct {
 		points [][]m.Vector
-		want   []m.Object
+		want   []m.Triangle
 	}{
 		{
 			points: [][]m.Vector{{}},
-			want:   []m.Object{},
+			want:   []m.Triangle{},
 		},
 		{
 			points: [][]m.Vector{
 				{{1, 0, 0}, {0, 0, 1}, {-1, 0, 0}, {0, 0, -1}},
 				{{1, 1, 0}, {0, 1, 1}, {-1, 1, 0}, {0, 1, -1}},
 			},
-			want: []m.Object{
+			want: []m.Triangle{
 				m.Triangle{P0: v(0, 0, -1), P1: v(0, 1, -1), P2: v(1, 0, 0)},
 				m.Triangle{P0: v(0, 1, -1), P1: v(1, 1, 0), P2: v(1, 0, 0)},
 				m.Triangle{P0: v(1, 0, 0), P1: v(1, 1, 0), P2: v(0, 0, 1)},

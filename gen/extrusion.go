@@ -10,7 +10,7 @@ import (
 // the back face is the front face mirrored
 // the side is made by pairwise joining the points of front and back
 func ExtrudeSolidFace(points []m.Vector, extrusionVector m.Vector, mat m.Material) m.Object {
-	triangles := []m.Object{}
+	triangles := []m.Triangle{}
 	// dumb algorithm for front face: join triangles radiating from one point
 	// note: facing is counterclockwise
 	p0 := points[0]
@@ -29,7 +29,7 @@ func ExtrudeSolidFace(points []m.Vector, extrusionVector m.Vector, mat m.Materia
 		ex[i] = p.Add(extrusionVector)
 	}
 	triangles = append(triangles, JoinPoints([][]m.Vector{points, ex}, mat)...)
-	return m.NewComplexObject(triangles)
+	return m.NewTriangleComplexObject(triangles)
 }
 
 // more complex / less naive:
@@ -46,7 +46,7 @@ type ExtrusionFace struct {
 }
 
 func (ef ExtrusionFace) Extrude(extrusionVector m.Vector) m.Object {
-	triangles := []m.Object{}
+	triangles := []m.Triangle{}
 	for _, t := range ef.Front {
 		triangles = append(triangles, m.NewTriangle(t.P0, t.P1, t.P2, ef.Material))
 		p0, p1, p2 := t.P0.Add(extrusionVector), t.P1.Add(extrusionVector), t.P2.Add(extrusionVector)
@@ -67,11 +67,11 @@ func (ef ExtrusionFace) Extrude(extrusionVector m.Vector) m.Object {
 		}
 		triangles = append(triangles, JoinPoints([][]m.Vector{list, ex}, ef.Material)...)
 	}
-	return m.NewComplexObject(triangles)
+	return m.NewTriangleComplexObject(triangles)
 }
 
 func (ef ExtrusionFace) ExtrudeNonCircular(extrusionVector m.Vector) m.Object {
-	triangles := []m.Object{}
+	triangles := []m.Triangle{}
 	for _, t := range ef.Front {
 		triangles = append(triangles, m.NewTriangle(t.P0, t.P1, t.P2, ef.Material))
 		p0, p1, p2 := t.P0.Add(extrusionVector), t.P1.Add(extrusionVector), t.P2.Add(extrusionVector)
@@ -92,5 +92,5 @@ func (ef ExtrusionFace) ExtrudeNonCircular(extrusionVector m.Vector) m.Object {
 		}
 		triangles = append(triangles, JoinPointsNonCircular([][]m.Vector{list, ex}, ef.Material)...)
 	}
-	return m.NewComplexObject(triangles)
+	return m.NewTriangleComplexObject(triangles)
 }

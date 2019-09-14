@@ -33,7 +33,7 @@ func main() {
 	rotation := m.RotateY(-math.Pi / 16.0)
 	transform := translation.Mul(rotation)
 
-	diffMat := &m.DiffuseMaterial{m.NewColor(250, 0, 0)}
+	diffMat := &m.DiffuseMaterial{Color: m.NewColor(250, 0, 0)}
 
 	// points := gen.QuadraticKochIsland(4)
 	// points := gen.DragonCurve(10)

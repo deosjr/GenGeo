@@ -133,7 +133,7 @@ func (po parametricObject) Build() m.Object {
 	}
 
 	triangles := JoinPoints(points, po.mat)
-	return m.NewComplexObject(triangles)
+	return m.NewTriangleComplexObject(triangles)
 }
 
 // a radial2d defines points around a center according to a pattern
@@ -203,7 +203,7 @@ func BuildFromPoints(radial radialEllipse, points []m.Vector, mat m.Material) m.
 	radialPoints[len(points)-1] = radial.Points(points[len(points)-1], normal, binormal, 0)
 
 	triangles := JoinPoints(radialPoints, mat)
-	return m.NewComplexObject(triangles)
+	return m.NewTriangleComplexObject(triangles)
 }
 
 // build path of points: node object at each point, radial around vertices
@@ -222,7 +222,9 @@ func BuildNodesVertices(node m.Object, radial radial2d, points []m.Vector, mat m
 		radialP := radial.Points(p, normal, binormal, 0)
 		radialNext := radial.Points(next, normal, binormal, 0)
 		pointsList := [][]m.Vector{radialP, radialNext}
-		objects = append(objects, JoinPoints(pointsList, mat)...)
+		for _, t := range JoinPoints(pointsList, mat) {
+			objects = append(objects, t)
+		}
 	}
 	translation := m.Translate(points[len(points)-1])
 	objects = append(objects, m.NewSharedObject(node, translation))
