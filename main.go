@@ -20,7 +20,7 @@ var (
 )
 
 func main() {
-	fmt.Println("Creating scene...")
+	//fmt.Println("Creating scene...")
 	camera := m.NewPerspectiveCamera(width, height, 0.5*math.Pi)
 	scene := m.NewScene(camera)
 
@@ -40,7 +40,7 @@ func main() {
 	// points := gen.HexagonalGosperCurve(3)
 	// points := gen.PeanoCurve(1)
 	// points := gen.HilbertCurve3D(3)
-	segments := gen.Branch2D(7)
+	segments := gen.Branch2D_d(7)
 	objects := []m.Object{}
 	for _, points := range segments {
 		if len(points) == 1 {
@@ -54,15 +54,18 @@ func main() {
 		scene.Add(shared)
 	}
 
+	complex := m.NewComplexObject(objects)
+	fmt.Println(SaveObj(complex))
+
 	//points := gen.CenterPointsOnOrigin(s)
 
 	scene.Precompute()
 
-	fmt.Println("Rendering...")
+	//fmt.Println("Rendering...")
 
 	from, to := m.Vector{0, 2, 0}, m.Vector{0, 0, 10}
 	camera.LookAt(from, to, ey)
-	film := render.Render(scene, numWorkers)
+	film := render.RenderNaive(scene, numWorkers)
 	film.SaveAsPNG("out.png")
 }
 

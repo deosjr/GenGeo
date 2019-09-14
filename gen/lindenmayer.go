@@ -172,7 +172,27 @@ func HilbertCurve3D(n int) []m.Vector {
 }
 
 // branching 2D
-func Branch2D(n int) [][]m.Vector {
+func Branch2D_a(n int) [][]m.Vector {
+	l := Lsystem{
+		Axiom: "F",
+		Productions: map[rune]string{
+			'F': "F[+F]F[-F]F",
+		},
+	}
+	return l.Evaluate(n, 5.0, 0.4, (25.7/360.0)*(2.0*math.Pi))
+}
+
+func Branch2D_b(n int) [][]m.Vector {
+	l := Lsystem{
+		Axiom: "F",
+		Productions: map[rune]string{
+			'F': "F[+F]F[-F][F]",
+		},
+	}
+	return l.Evaluate(n, 5.0, 0.4, (20.0/360.0)*(2.0*math.Pi))
+}
+
+func Branch2D_d(n int) [][]m.Vector {
 	l := Lsystem{
 		Axiom: "X",
 		Productions: map[rune]string{
