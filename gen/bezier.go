@@ -54,8 +54,9 @@ func NewCubicBezier(p0, p1, p2, p3 m.Vector) cubicBezier {
 
 func cubicBezierFunc(t float64, points []m.Vector, d m.Dimension) float64 {
 	p0, p1, p2, p3 := points[0], points[1], points[2], points[3]
-	return p0.Get(d)*math.Pow((1-t), 3) + p1.Get(d)*3*math.Pow((1-t), 2)*t +
-		p2.Get(d)*3*(1-t)*math.Pow(t, 2) + p3.Get(d)*math.Pow(t, 3)
+	p0d, p1d, p2d, p3d := float64(p0.Get(d)), float64(p1.Get(d)), float64(p2.Get(d)), float64(p3.Get(d))
+	return p0d*math.Pow((1-t), 3) + p1d*3*math.Pow((1-t), 2)*t +
+		p2d*3*(1-t)*math.Pow(t, 2) + p3d*math.Pow(t, 3)
 }
 
 func (b cubicBezier) Derivative() ParametricFunction {
@@ -91,7 +92,8 @@ func NewQuadraticBezier(p0, p1, p2 m.Vector) quadraticBezier {
 
 func quadraticBezierFunc(t float64, points []m.Vector, d m.Dimension) float64 {
 	p0, p1, p2 := points[0], points[1], points[2]
-	return p0.Get(d)*math.Pow((1-t), 2) + p1.Get(d)*2*(1-t)*t + p2.Get(d)*math.Pow(t, 2)
+	p0d, p1d, p2d := float64(p0.Get(d)), float64(p1.Get(d)), float64(p2.Get(d))
+	return p0d*math.Pow((1-t), 2) + p1d*2*(1-t)*t + p2d*math.Pow(t, 2)
 }
 
 func (b quadraticBezier) Derivative() ParametricFunction {
@@ -123,5 +125,6 @@ func NewLinearBezier(p0, p1 m.Vector) linearBezier {
 
 func linearBezierFunc(t float64, points []m.Vector, d m.Dimension) float64 {
 	p0, p1 := points[0], points[1]
-	return p0.Get(d)*(1-t) + p1.Get(d)*t
+	p0d, p1d := float64(p0.Get(d)), float64(p1.Get(d))
+	return p0d*(1-t) + p1d*t
 }

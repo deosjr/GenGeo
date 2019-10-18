@@ -26,16 +26,16 @@ type Lsystem struct {
 // d is length of initial line drawn by F at iteration 0
 // dFactor is the factor by which d shrinks every iteration
 // delta is the size of angle change by orientation changes
-func (l Lsystem) Evaluate(n int, d, dFactor, delta float64) [][]m.Vector {
+func (l Lsystem) Evaluate(n int, d float32, dFactor, delta float64) [][]m.Vector {
 	s := l.Axiom
 	for i := 0; i < n; i++ {
 		s = l.rewrite(s)
 	}
-	dNew := d * math.Pow(dFactor, float64(n))
+	dNew := d * float32(math.Pow(dFactor, float64(n)))
 	return l.draw(s, dNew, delta)
 }
 
-func (l Lsystem) Nonbranching(n int, d, dFactor, delta float64) []m.Vector {
+func (l Lsystem) Nonbranching(n int, d float32, dFactor, delta float64) []m.Vector {
 	a := l.Evaluate(n, d, dFactor, delta)
 	return a[0]
 }
@@ -58,7 +58,7 @@ type savedPos struct {
 	H, L, U m.Vector
 }
 
-func (l Lsystem) draw(s string, d, delta float64) [][]m.Vector {
+func (l Lsystem) draw(s string, d float32, delta float64) [][]m.Vector {
 	// turtle starts in origin facing up
 	origin := m.Vector{0, 0, 0}
 	H, L, U := m.Vector{0, 1, 0}, m.Vector{1, 0, 0}, m.Vector{0, 0, 1}

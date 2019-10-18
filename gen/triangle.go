@@ -63,7 +63,7 @@ func CenterPointsOnOrigin(points []m.Vector) []m.Vector {
 	for _, p := range points {
 		centroid = centroid.Add(p)
 	}
-	centroid = centroid.Times(1.0 / float64(len(points)))
+	centroid = centroid.Times(1.0 / float32(len(points)))
 	objectToOrigin := m.Translate(centroid).Inverse()
 
 	centered := make([]m.Vector, len(points))

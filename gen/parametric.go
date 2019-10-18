@@ -71,7 +71,7 @@ func (f parametricFunction) Z(t float64) float64 {
 }
 
 func (f parametricFunction) Vector(t float64) m.Vector {
-	return m.Vector{f.x(t), f.y(t), f.z(t)}
+	return m.Vector{float32(f.x(t)), float32(f.y(t)), float32(f.z(t))}
 }
 
 func (f parametricFunction) Function() ParametricFunction {
@@ -144,15 +144,15 @@ type radial2d interface {
 }
 
 type radialEllipse struct {
-	radiusx   func(t float64) float64
-	radiusy   func(t float64) float64
+	radiusx   func(t float64) float32
+	radiusy   func(t float64) float32
 	numPoints int
 }
 
-func NewRadialEllipse(a, b func(t float64) float64, n int) radialEllipse {
+func NewRadialEllipse(a, b func(t float64) float32, n int) radialEllipse {
 	return radialEllipse{radiusx: a, radiusy: b, numPoints: n}
 }
-func NewRadialCircle(radius func(t float64) float64, n int) radialEllipse {
+func NewRadialCircle(radius func(t float64) float32, n int) radialEllipse {
 	return radialEllipse{radiusx: radius, radiusy: radius, numPoints: n}
 }
 

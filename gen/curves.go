@@ -7,21 +7,21 @@ import (
 )
 
 type ellipse struct {
-	radiusx float64
-	radiusy float64
+	radiusx float32
+	radiusy float32
 	center  m.Vector
 }
 
-func NewEllipse(c m.Vector, a, b float64) ellipse {
+func NewEllipse(c m.Vector, a, b float32) ellipse {
 	return ellipse{center: c, radiusx: a, radiusy: b}
 }
-func NewCircle(c m.Vector, r float64) ellipse {
+func NewCircle(c m.Vector, r float32) ellipse {
 	return ellipse{center: c, radiusx: r, radiusy: r}
 }
 
 func (e ellipse) Point(phase float64, xaxis, yaxis m.Vector) m.Vector {
-	xVector := xaxis.Times(e.radiusx * math.Cos(phase))
-	yVector := yaxis.Times(e.radiusy * math.Sin(phase))
+	xVector := xaxis.Times(e.radiusx * float32(math.Cos(phase)))
+	yVector := yaxis.Times(e.radiusy * float32(math.Sin(phase)))
 	return e.center.Add(xVector).Add(yVector)
 }
 
@@ -39,10 +39,10 @@ func (e ellipse) PointsPhaseRange(minPhase, maxPhase float64, n int, xaxis, yaxi
 
 type sphere struct {
 	center m.Vector
-	radius float64
+	radius float32
 }
 
-func NewSphere(c m.Vector, r float64) sphere {
+func NewSphere(c m.Vector, r float32) sphere {
 	return sphere{center: c, radius: r}
 }
 
@@ -93,7 +93,7 @@ func (s sphere) pushOut(p m.Vector) m.Vector {
 
 // AxisAlignedOctahedron returns an octahedron centered on point p
 // with vertices at distance r from p along the X, Y and Z axes
-func AxisAlignedOctahedron(p m.Vector, r float64, mat m.Material) []m.Triangle {
+func AxisAlignedOctahedron(p m.Vector, r float32, mat m.Material) []m.Triangle {
 	minX, maxX := m.Vector{p.X - r, p.Y, p.Z}, m.Vector{p.X + r, p.Y, p.Z}
 	minY, maxY := m.Vector{p.X, p.Y - r, p.Z}, m.Vector{p.X, p.Y + r, p.Z}
 	minZ, maxZ := m.Vector{p.X, p.Y, p.Z - r}, m.Vector{p.X, p.Y, p.Z + r}
