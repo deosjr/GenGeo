@@ -26,15 +26,10 @@ type Lsystem struct {
 // d is length of initial line drawn by F at iteration 0
 // dFactor is the factor by which d shrinks every iteration
 // delta is the size of angle change by orientation changes
-func (l Lsystem) Evaluate(n int, d float32, dFactor, delta float64) [][]m.Vector {
+func (l Lsystem) Evaluate(n int, d float32, dFactor, delta float64) []Lsegment {
 	instrs := l.rewriteN(l.Axiom, 0, n)
 	dNew := d * float32(math.Pow(dFactor, float64(n)))
 	return draw(instrs, dNew, delta)
-}
-
-func (l Lsystem) Nonbranching(n int, d float32, dFactor, delta float64) []m.Vector {
-	a := l.Evaluate(n, d, dFactor, delta)
-	return a[0]
 }
 
 func (l Lsystem) rewriteN(s string, depth, n int) []turtleInstruction {
@@ -64,7 +59,9 @@ type savedPos struct {
 
 type turtleInstruction struct {
 	operation turtleOperation
-	param     float32
+	// so far unused, but can support depth-related info
+	// such as varying trunk width etc?
+	param float32
 }
 
 type turtleOperation uint8
@@ -81,6 +78,8 @@ const (
 	turnAround
 	addStack
 	popStack
+	startLeaf
+	endLeaf
 )
 
 func lookup(r rune) turtleInstruction {
@@ -106,26 +105,56 @@ func lookup(r rune) turtleInstruction {
 		i.operation = addStack
 	case ']':
 		i.operation = popStack
+	case '{':
+		i.operation = startLeaf
+	case '}':
+		i.operation = endLeaf
 	default:
 		i.operation = none
 	}
 	return i
 }
 
-func draw(instrs []turtleInstruction, d float32, delta float64) [][]m.Vector {
+type Lsegment interface {
+	GetPoints() []m.Vector
+}
+
+type Lleaf struct {
+	points []m.Vector
+}
+
+func (l Lleaf) GetPoints() []m.Vector {
+	return l.points
+}
+
+type Lbranch struct {
+	points []m.Vector
+}
+
+func (b Lbranch) GetPoints() []m.Vector {
+	return b.points
+}
+
+func draw(instrs []turtleInstruction, d float32, delta float64) []Lsegment {
 	// turtle starts in origin facing up
 	origin := m.Vector{0, 0, 0}
 	H, L, U := m.Vector{0, 1, 0}, m.Vector{1, 0, 0}, m.Vector{0, 0, 1}
 	t := turtle{origin, H.Times(d)}
 	stack := []savedPos{}
 
-	segments := [][]m.Vector{}
-	segment := []m.Vector{t.pos}
+	segments := []Lsegment{}
+	seg := []m.Vector{t.pos}
+	var leafSeg []m.Vector
+	var leafMaking bool
 	for _, instr := range instrs {
 		switch instr.operation {
 		case forward:
 			t.pos = t.pos.Add(t.heading)
-			segment = append(segment, t.pos)
+			if leafMaking {
+				leafSeg = append(leafSeg, t.pos)
+			} else {
+				seg = append(seg, t.pos)
+			}
 		case turnLeft:
 			t.heading, L, H = transformAxes(delta, U, t.heading, L, H)
 		case turnRight:
@@ -148,12 +177,20 @@ func draw(instrs []turtleInstruction, d float32, delta float64) [][]m.Vector {
 			stack = stack[:len(stack)-1]
 			t = newPos.turtle
 			H, L, U = newPos.H, newPos.L, newPos.U
-			segments = append(segments, segment)
-			segment = []m.Vector{t.pos}
+			if len(seg) > 1 {
+				segments = append(segments, Lbranch{points: seg})
+			}
+			seg = []m.Vector{t.pos}
+		case startLeaf:
+			leafMaking = true
+			leafSeg = []m.Vector{t.pos}
+		case endLeaf:
+			leafMaking = false
+			segments = append(segments, Lleaf{points: leafSeg})
 		}
 	}
-	if len(segment) > 1 {
-		segments = append(segments, segment)
+	if len(seg) > 1 {
+		segments = append(segments, Lbranch{points: seg})
 	}
 	return segments
 }
@@ -168,17 +205,17 @@ func transformAxes(delta float64, rotationAxis, th, n, bn m.Vector) (m.Vector, m
 }
 
 // some famous 2D L-system examples from the book:
-func QuadraticKochIsland(n int) []m.Vector {
+func QuadraticKochIsland(n int) []Lsegment {
 	l := Lsystem{
 		Axiom: "F-F-F-F",
 		Productions: map[rune]string{
 			'F': "F-F+F+FF-F-F+F",
 		},
 	}
-	return l.Nonbranching(n, 1.0, 0.25, math.Pi/2.0)
+	return l.Evaluate(n, 1.0, 0.25, math.Pi/2.0)
 }
 
-func DragonCurve(n int) []m.Vector {
+func DragonCurve(n int) []Lsegment {
 	l := Lsystem{
 		Axiom: "F",
 		Productions: map[rune]string{
@@ -186,10 +223,10 @@ func DragonCurve(n int) []m.Vector {
 			'G': "-F-G",
 		},
 	}
-	return l.Nonbranching(n, 1.0, 0.75, math.Pi/2.0)
+	return l.Evaluate(n, 1.0, 0.75, math.Pi/2.0)
 }
 
-func HexagonalGosperCurve(n int) []m.Vector {
+func HexagonalGosperCurve(n int) []Lsegment {
 	l := Lsystem{
 		Axiom: "F",
 		Productions: map[rune]string{
@@ -197,10 +234,10 @@ func HexagonalGosperCurve(n int) []m.Vector {
 			'G': "-F+GG++G+F--F-G",
 		},
 	}
-	return l.Nonbranching(n, 1.0, 0.5, math.Pi/3.0)
+	return l.Evaluate(n, 1.0, 0.5, math.Pi/3.0)
 }
 
-func PeanoCurve(n int) []m.Vector {
+func PeanoCurve(n int) []Lsegment {
 	l := Lsystem{
 		Axiom: "L",
 		Productions: map[rune]string{
@@ -208,11 +245,11 @@ func PeanoCurve(n int) []m.Vector {
 			'R': "RFLFR+F+LFRFL-F-RFLFR",
 		},
 	}
-	return l.Nonbranching(n, 1.0, 0.25, math.Pi/2.0)
+	return l.Evaluate(n, 1.0, 0.25, math.Pi/2.0)
 }
 
 // and some 3D examples:
-func HilbertCurve3D(n int) []m.Vector {
+func HilbertCurve3D(n int) []Lsegment {
 	l := Lsystem{
 		Axiom: "A",
 		Productions: map[rune]string{
@@ -222,11 +259,11 @@ func HilbertCurve3D(n int) []m.Vector {
 			'D': "|CFB-F+B|FA&F^A&&FB-F+B|FC//",
 		},
 	}
-	return l.Nonbranching(n, 1.0, 0.5, math.Pi/2.0)
+	return l.Evaluate(n, 1.0, 0.5, math.Pi/2.0)
 }
 
 // branching 2D
-func Branch2D_a(n int) [][]m.Vector {
+func Branch2D_a(n int) []Lsegment {
 	l := Lsystem{
 		Axiom: "F",
 		Productions: map[rune]string{
@@ -236,7 +273,7 @@ func Branch2D_a(n int) [][]m.Vector {
 	return l.Evaluate(n, 5.0, 0.4, (25.7/360.0)*(2.0*math.Pi))
 }
 
-func Branch2D_b(n int) [][]m.Vector {
+func Branch2D_b(n int) []Lsegment {
 	l := Lsystem{
 		Axiom: "F",
 		Productions: map[rune]string{
@@ -246,7 +283,7 @@ func Branch2D_b(n int) [][]m.Vector {
 	return l.Evaluate(n, 5.0, 0.4, (20.0/360.0)*(2.0*math.Pi))
 }
 
-func Branch2D_d(n int) [][]m.Vector {
+func Branch2D_d(n int) []Lsegment {
 	l := Lsystem{
 		Axiom: "X",
 		Productions: map[rune]string{
@@ -261,22 +298,18 @@ func Branch2D_d(n int) [][]m.Vector {
 // not yet respecting the following operators:
 // ! means decrement the diameter of segment
 // ' means increment the index on color table (?)
-// {} denotes boundary of leaf drawing, indicate polygon should be filled
-func Branch3D(n int) [][]m.Vector {
+// note: original A production was 'A' -> "[&FL!A]/////'[&FL!A]/////'[&FL!A]",
+// but that lead to an ugly tree. To reproduce example, we need to manually
+// rewrite the L production in A three times, unfortunately
+func Branch3D(n int) []Lsegment {
 	l := Lsystem{
 		Axiom: "A",
 		Productions: map[rune]string{
-			'A': "[&FL!A]/////'[&FL!A]/////'[&FL!A]",
+			'A': "[&F['''^^{-f+f+f-|-f+f+f}]!A]/////'[&F['''^^{-f+f+f-|-f+f+f}]!A]/////'[&F['''^^{-f+f+f-|-f+f+f}]!A]",
 			'F': "S/////F",
 			'S': "FL",
 			'L': "['''^^{-f+f+f-|-f+f+f}]",
 		},
 	}
 	return l.Evaluate(n, 5.0, 0.5, (22.5/360.0)*(2.0*math.Pi))
-}
-
-func SurfaceBoundsLeaf(s string, d float32, angle float64) []m.Vector {
-	l := Lsystem{Axiom: s}
-	instrs := l.rewriteN(s, 0, 0)
-	return draw(instrs, d, angle)[0]
 }
