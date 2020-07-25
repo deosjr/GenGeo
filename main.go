@@ -13,6 +13,7 @@ var (
 	width      uint = 1600
 	height     uint = 1200
 	numWorkers      = 10
+	numSamples      = 10
 
 	ex = m.Vector{1, 0, 0}
 	ey = m.Vector{0, 1, 0}
@@ -20,7 +21,7 @@ var (
 )
 
 func main() {
-	//fmt.Println("Creating scene...")
+	fmt.Println("Creating scene...")
 	camera := m.NewPerspectiveCamera(width, height, 0.5*math.Pi)
 	scene := m.NewScene(camera)
 
@@ -41,7 +42,8 @@ func main() {
 	// points := gen.PeanoCurve(1)
 	// points := gen.HilbertCurve3D(3)
 	//segments := [][]m.Vector{points}
-	segments := gen.Branch2D_d(7)
+	//segments := gen.Branch2D_d(7)
+	segments := gen.Branch3D(7)
 	objects := []m.Object{}
 	for _, points := range segments {
 		if len(points) == 1 {
@@ -59,20 +61,18 @@ func main() {
 	//fmt.Println(SaveObj(complex))
 
 	//points := gen.CenterPointsOnOrigin(s)
-
 	scene.Precompute()
-
-	//fmt.Println("Rendering...")
 
 	from, to := m.Vector{0, 2, 0}, m.Vector{0, 0, 10}
 	camera.LookAt(from, to, ey)
 	params := render.Params{
 		Scene:        scene,
 		NumWorkers:   numWorkers,
-		NumSamples:   10,
+		NumSamples:   numSamples,
 		AntiAliasing: true,
 		TracerType:   m.WhittedStyle,
 	}
+	fmt.Println("Rendering...")
 	film := render.Render(params)
 	film.SaveAsPNG("out.png")
 }

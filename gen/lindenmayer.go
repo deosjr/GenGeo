@@ -202,3 +202,21 @@ func Branch2D_d(n int) [][]m.Vector {
 	}
 	return l.Evaluate(n, 5.0, 0.4, (20.0/360.0)*(2.0*math.Pi))
 }
+
+// branching 3D
+// not yet respecting the following operators:
+// ! means decrement the diameter of segment
+// ' means increment the index on color table (?)
+// {} denotes boundary of leaf drawing (to be handled separately)
+func Branch3D(n int) [][]m.Vector {
+	l := Lsystem{
+		Axiom: "A",
+		Productions: map[rune]string{
+			'A': "[&FL!A]/////'[&FL!A]/////'[&FL!A]",
+			'F': "S/////F",
+			'S': "FL",
+			'L': "['''^^{-f+f+f-|-f+f+f}]",
+		},
+	}
+	return l.Evaluate(n, 5.0, 0.5, (22.5/360.0)*(2.0*math.Pi))
+}
