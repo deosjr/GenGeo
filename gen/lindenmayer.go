@@ -27,10 +27,7 @@ type Lsystem struct {
 // dFactor is the factor by which d shrinks every iteration
 // delta is the size of angle change by orientation changes
 func (l Lsystem) Evaluate(n int, d float32, dFactor, delta float64) [][]m.Vector {
-	s := l.Axiom
-	for i := 0; i < n; i++ {
-		s = l.rewrite(s)
-	}
+	s := l.rewriteN(l.Axiom, n)
 	dNew := d * float32(math.Pow(dFactor, float64(n)))
 	return l.draw(s, dNew, delta)
 }
@@ -40,7 +37,10 @@ func (l Lsystem) Nonbranching(n int, d float32, dFactor, delta float64) []m.Vect
 	return a[0]
 }
 
-func (l Lsystem) rewrite(s string) string {
+func (l Lsystem) rewriteN(s string, n int) string {
+	if n == 0 {
+		return s
+	}
 	newS := ""
 	for _, r := range s {
 		p, ok := l.Productions[r]
@@ -48,7 +48,7 @@ func (l Lsystem) rewrite(s string) string {
 			newS = newS + string(r)
 			continue
 		}
-		newS = newS + p
+		newS = newS + l.rewriteN(p, n-1)
 	}
 	return newS
 }

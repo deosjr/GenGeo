@@ -40,6 +40,7 @@ func main() {
 	// points := gen.HexagonalGosperCurve(3)
 	// points := gen.PeanoCurve(1)
 	// points := gen.HilbertCurve3D(3)
+	//segments := [][]m.Vector{points}
 	segments := gen.Branch2D_d(7)
 	objects := []m.Object{}
 	for _, points := range segments {
@@ -47,15 +48,15 @@ func main() {
 			continue
 		}
 
-		radial := gen.NewRadialCircle(func(t float64) float64 { return 0.005 }, 10)
+		radial := gen.NewRadialCircle(func(t float64) float32 { return 0.005 }, 10)
 		o := gen.BuildFromPoints(radial, points, diffMat)
 		objects = append(objects, o)
 		shared := m.NewSharedObject(o, transform)
 		scene.Add(shared)
 	}
 
-	complex := m.NewComplexObject(objects)
-	fmt.Println(SaveObj(complex))
+	//complex := m.NewComplexObject(objects)
+	//fmt.Println(SaveObj(complex))
 
 	//points := gen.CenterPointsOnOrigin(s)
 
@@ -65,7 +66,14 @@ func main() {
 
 	from, to := m.Vector{0, 2, 0}, m.Vector{0, 0, 10}
 	camera.LookAt(from, to, ey)
-	film := render.RenderNaive(scene, numWorkers)
+	params := render.Params{
+		Scene:        scene,
+		NumWorkers:   numWorkers,
+		NumSamples:   10,
+		AntiAliasing: true,
+		TracerType:   m.WhittedStyle,
+	}
+	film := render.Render(params)
 	film.SaveAsPNG("out.png")
 }
 
