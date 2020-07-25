@@ -30,15 +30,17 @@ func main() {
 
 	m.SetBackgroundColor(m.NewColor(200, 200, 200))
 
-	translation := m.Translate(m.Vector{0, 0.5, -8})
-	rotation := m.RotateY(-math.Pi / 16.0)
+	translation := m.Translate(m.Vector{0, 0.5, -9})
+	rotation := m.RotateY(math.Pi / 16.0)
 	transform := translation.Mul(rotation)
 
 	diffMat := &m.DiffuseMaterial{Color: m.NewColor(250, 0, 0)}
 	leafMat := &m.DiffuseMaterial{Color: m.NewColor(0, 250, 0)}
+	flowerMat := &m.DiffuseMaterial{Color: m.NewColor(250, 250, 250)}
 
 	//segments := gen.HilbertCurve3D(3)
-	segments := gen.Branch3D(7)
+	//segments := gen.Branch3D(7)
+	segments := gen.Branch3D_2(5)
 	objects := []m.Object{}
 	for _, segment := range segments {
 		points := segment.GetPoints()
@@ -51,7 +53,16 @@ func main() {
 			for i, p := range points {
 				revPoints[len(points)-i-1] = p
 			}
-			triangles := gen.TriangulateConvexPolygon(revPoints, leafMat)
+			var mat m.Material
+			var ps []m.Vector
+			if len(points) == 9 {
+				mat = leafMat
+				ps = revPoints
+			} else {
+				mat = flowerMat
+				ps = points
+			}
+			triangles := gen.TriangulateConvexPolygon(ps, mat)
 			scene.Add(m.NewSharedObject(m.NewTriangleComplexObject(triangles), transform))
 
 		case gen.Lbranch:

@@ -294,22 +294,46 @@ func Branch2D_d(n int) []Lsegment {
 	return l.Evaluate(n, 5.0, 0.4, (20.0/360.0)*(2.0*math.Pi))
 }
 
-// branching 3D
+// branching 3D: Fig 1.25
 // not yet respecting the following operators:
 // ! means decrement the diameter of segment
 // ' means increment the index on color table (?)
-// note: original A production was 'A' -> "[&FL!A]/////'[&FL!A]/////'[&FL!A]",
-// but that lead to an ugly tree. To reproduce example, we need to manually
-// rewrite the L production in A three times, unfortunately
+// note: L is used for forward, so leaf is X
 func Branch3D(n int) []Lsegment {
 	l := Lsystem{
 		Axiom: "A",
 		Productions: map[rune]string{
-			'A': "[&F['''^^{-f+f+f-|-f+f+f}]!A]/////'[&F['''^^{-f+f+f-|-f+f+f}]!A]/////'[&F['''^^{-f+f+f-|-f+f+f}]!A]",
+			'A': "[&FX!A]/////'[&FX!A]/////'[&FX!A]",
 			'F': "S/////F",
-			'S': "FL",
-			'L': "['''^^{-f+f+f-|-f+f+f}]",
+			'S': "FX",
+			'X': "['''^^{-f+f+f-|-f+f+f}]",
 		},
 	}
 	return l.Evaluate(n, 5.0, 0.5, (22.5/360.0)*(2.0*math.Pi))
+}
+
+// Fig 1.26
+// will look better once diameter segment changes are implemented?
+// no use of ! operator anywhere though...
+func Branch3D_2(n int) []Lsegment {
+	l := Lsystem{
+		Axiom: "P",
+		Productions: map[rune]string{
+			// plant
+			'P': "I+[P+O]--//[--X]I[++X]-[PO]++PO",
+			// internode
+			'I': "FS[//&&X][//^^X]FS",
+			// seg
+			'S': "SFS",
+			// leaf
+			'X': "['{+f-ff-f+|+f-ff-f}]",
+			// flower
+			'O': "[&&&C'/W////W////W////W////W]",
+			// pedicel
+			'C': "FF",
+			// wedge
+			'W': "['^F][{&&&&-f+f|-f+f}]",
+		},
+	}
+	return l.Evaluate(n, 1.0, 0.5, (18.0/360.0)*(2.0*math.Pi))
 }
