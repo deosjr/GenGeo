@@ -14,7 +14,7 @@ func TestPointsOnCircle(t *testing.T) {
 		normal    m.Vector
 		binormal  m.Vector
 		numPoints int
-		radius    func(t float64) float64
+		radius    func(t float64) float32
 		t         float64
 		want      []m.Vector
 	}{
@@ -23,7 +23,7 @@ func TestPointsOnCircle(t *testing.T) {
 			normal:    m.Vector{1, 0, 0},
 			binormal:  m.Vector{0, 0, 1},
 			numPoints: 4,
-			radius:    func(t float64) float64 { return 1.0 },
+			radius:    func(t float64) float32 { return 1.0 },
 			want:      []m.Vector{{1, 0, 0}, {0, 0, 1}, {-1, 0, 0}, {0, 0, -1}},
 		},
 		{
@@ -31,16 +31,16 @@ func TestPointsOnCircle(t *testing.T) {
 			normal:    m.Vector{1, 0, 0},
 			binormal:  m.Vector{0, 0, 1},
 			numPoints: 8,
-			radius:    func(t float64) float64 { return 1.0 },
+			radius:    func(t float64) float32 { return 1.0 },
 			want: []m.Vector{
 				{1, 0, 0},
-				{math.Cos(math.Pi / 4.0), 0, math.Sin(math.Pi / 4.0)},
+				{float32(math.Cos(math.Pi / 4.0)), 0, float32(math.Sin(math.Pi / 4.0))},
 				{0, 0, 1},
-				{-math.Cos(math.Pi / 4.0), 0, math.Sin(math.Pi / 4.0)},
+				{float32(-math.Cos(math.Pi / 4.0)), 0, float32(math.Sin(math.Pi / 4.0))},
 				{-1, 0, 0},
-				{-math.Cos(math.Pi / 4.0), 0, -math.Sin(math.Pi / 4.0)},
+				{float32(-math.Cos(math.Pi / 4.0)), 0, float32(-math.Sin(math.Pi / 4.0))},
 				{0, 0, -1},
-				{math.Cos(math.Pi / 4.0), 0, -math.Sin(math.Pi / 4.0)},
+				{float32(math.Cos(math.Pi / 4.0)), 0, float32(-math.Sin(math.Pi / 4.0))},
 			},
 		},
 	} {
@@ -85,12 +85,12 @@ func TestJoinCirclePoints(t *testing.T) {
 	}
 }
 
-func v(x, y, z float64) m.Vector {
+func v(x, y, z float32) m.Vector {
 	return m.Vector{x, y, z}
 }
 
 func compareVector(u, v m.Vector) bool {
-	imprecision := 1000.0
+	var imprecision float32 = 1000.0
 	for d := 0; d < 3; d++ {
 		dim := m.Dimension(d)
 		if int(u.Get(dim)*imprecision) != int(v.Get(dim)*imprecision) {
