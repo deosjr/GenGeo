@@ -189,6 +189,11 @@ func BuildFromPoints(radial radialEllipse, points []m.Vector, mat m.Material) m.
 		rdirection := m.VectorFromTo(prev, p).Normalize()
 		rorigin := prev.Add(normal.Times(radius))
 		ln := rdirection.Dot(planenormal)
+		// TODO: figure out why ln can be 0, leads to NaN triangles
+		// set to 1 for now but that is totally arbitrary
+		if ln == 0 {
+			ln = 1
+		}
 		d := m.VectorFromTo(rorigin, p).Dot(planenormal) / ln
 		npoint := rorigin.Add(rdirection.Times(d))
 		normal = m.VectorFromTo(p, npoint).Normalize()
