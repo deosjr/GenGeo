@@ -27,9 +27,9 @@ type Lsystem struct {
 // dFactor is the factor by which d shrinks every iteration
 // delta is the size of angle change by orientation changes
 func (l Lsystem) Evaluate(n int, d float32, dFactor, delta float64) [][]m.Vector {
-	s := l.rewriteN(l.Axiom, n)
+	instrs := l.rewriteN(l.Axiom, 0, n)
 	dNew := d * float32(math.Pow(dFactor, float64(n)))
-	return l.draw(s, dNew, delta)
+	return draw(instrs, dNew, delta)
 }
 
 func (l Lsystem) Nonbranching(n int, d float32, dFactor, delta float64) []m.Vector {
@@ -37,20 +37,24 @@ func (l Lsystem) Nonbranching(n int, d float32, dFactor, delta float64) []m.Vect
 	return a[0]
 }
 
-func (l Lsystem) rewriteN(s string, n int) string {
+func (l Lsystem) rewriteN(s string, depth, n int) []turtleInstruction {
+	instrs := []turtleInstruction{}
 	if n == 0 {
-		return s
+		for _, r := range s {
+			instrs = append(instrs, lookup(r))
+		}
+		return instrs
 	}
-	newS := ""
 	for _, r := range s {
 		p, ok := l.Productions[r]
 		if !ok {
-			newS = newS + string(r)
+			instrs = append(instrs, lookup(r))
 			continue
 		}
-		newS = newS + l.rewriteN(p, n-1)
+		recInstrs := l.rewriteN(p, depth+1, n-1)
+		instrs = append(instrs, recInstrs...)
 	}
-	return newS
+	return instrs
 }
 
 type savedPos struct {
@@ -58,7 +62,57 @@ type savedPos struct {
 	H, L, U m.Vector
 }
 
-func (l Lsystem) draw(s string, d float32, delta float64) [][]m.Vector {
+type turtleInstruction struct {
+	operation turtleOperation
+	param     float32
+}
+
+type turtleOperation uint8
+
+const (
+	none turtleOperation = iota
+	forward
+	turnLeft
+	turnRight
+	pitchDown
+	pitchUp
+	rollLeft
+	rollRight
+	turnAround
+	addStack
+	popStack
+)
+
+func lookup(r rune) turtleInstruction {
+	i := turtleInstruction{}
+	switch r {
+	case 'F', 'G', 'L', 'R':
+		i.operation = forward
+	case '+':
+		i.operation = turnLeft
+	case '-':
+		i.operation = turnRight
+	case '&':
+		i.operation = pitchDown
+	case '^':
+		i.operation = pitchUp
+	case '\\':
+		i.operation = rollLeft
+	case '/':
+		i.operation = rollRight
+	case '|':
+		i.operation = turnAround
+	case '[':
+		i.operation = addStack
+	case ']':
+		i.operation = popStack
+	default:
+		i.operation = none
+	}
+	return i
+}
+
+func draw(instrs []turtleInstruction, d float32, delta float64) [][]m.Vector {
 	// turtle starts in origin facing up
 	origin := m.Vector{0, 0, 0}
 	H, L, U := m.Vector{0, 1, 0}, m.Vector{1, 0, 0}, m.Vector{0, 0, 1}
@@ -67,29 +121,29 @@ func (l Lsystem) draw(s string, d float32, delta float64) [][]m.Vector {
 
 	segments := [][]m.Vector{}
 	segment := []m.Vector{t.pos}
-	for _, r := range s {
-		switch r {
-		case 'F', 'G', 'L', 'R':
+	for _, instr := range instrs {
+		switch instr.operation {
+		case forward:
 			t.pos = t.pos.Add(t.heading)
 			segment = append(segment, t.pos)
-		case '+':
+		case turnLeft:
 			t.heading, L, H = transformAxes(delta, U, t.heading, L, H)
-		case '-':
+		case turnRight:
 			t.heading, L, H = transformAxes(-delta, U, t.heading, L, H)
-		case '&':
+		case pitchDown:
 			t.heading, U, H = transformAxes(delta, L, t.heading, U, H)
-		case '^':
+		case pitchUp:
 			t.heading, U, H = transformAxes(-delta, L, t.heading, U, H)
-		case '\\':
+		case rollLeft:
 			t.heading, U, L = transformAxes(delta, H, t.heading, U, L)
-		case '/':
+		case rollRight:
 			t.heading, U, L = transformAxes(-delta, H, t.heading, U, L)
-		case '|':
+		case turnAround:
 			t.heading, L, H = transformAxes(math.Pi, U, t.heading, L, H)
-		case '[':
+		case addStack:
 			lastPos := savedPos{t, H, L, U}
 			stack = append(stack, lastPos)
-		case ']':
+		case popStack:
 			newPos := stack[len(stack)-1]
 			stack = stack[:len(stack)-1]
 			t = newPos.turtle
@@ -207,7 +261,7 @@ func Branch2D_d(n int) [][]m.Vector {
 // not yet respecting the following operators:
 // ! means decrement the diameter of segment
 // ' means increment the index on color table (?)
-// {} denotes boundary of leaf drawing (to be handled separately)
+// {} denotes boundary of leaf drawing, indicate polygon should be filled
 func Branch3D(n int) [][]m.Vector {
 	l := Lsystem{
 		Axiom: "A",
