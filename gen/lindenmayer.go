@@ -86,7 +86,7 @@ const (
 func lookup(r rune) turtleInstruction {
 	i := turtleInstruction{}
 	switch r {
-	case 'F', 'G', 'L', 'R':
+	case 'F', 'f', 'G', 'L', 'R':
 		i.operation = forward
 	case '+':
 		i.operation = turnLeft
@@ -273,4 +273,10 @@ func Branch3D(n int) [][]m.Vector {
 		},
 	}
 	return l.Evaluate(n, 5.0, 0.5, (22.5/360.0)*(2.0*math.Pi))
+}
+
+func SurfaceBoundsLeaf(s string, d float32, angle float64) []m.Vector {
+	l := Lsystem{Axiom: s}
+	instrs := l.rewriteN(s, 0, 0)
+	return draw(instrs, d, angle)[0]
 }

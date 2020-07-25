@@ -43,19 +43,24 @@ func main() {
 	// points := gen.HilbertCurve3D(3)
 	//segments := [][]m.Vector{points}
 	//segments := gen.Branch2D_d(7)
-	segments := gen.Branch3D(7)
-	objects := []m.Object{}
-	for _, points := range segments {
-		if len(points) == 1 {
-			continue
-		}
+	/*
+		segments := gen.Branch3D(7)
+		objects := []m.Object{}
+		for _, points := range segments {
+			if len(points) == 1 {
+				continue
+			}
 
-		radial := gen.NewRadialCircle(func(t float64) float32 { return 0.005 }, 10)
-		o := gen.BuildFromPoints(radial, points, diffMat)
-		objects = append(objects, o)
-		shared := m.NewSharedObject(o, transform)
-		scene.Add(shared)
-	}
+			radial := gen.NewRadialCircle(func(t float64) float32 { return 0.005 }, 10)
+			o := gen.BuildFromPoints(radial, points, diffMat)
+			objects = append(objects, o)
+			shared := m.NewSharedObject(o, transform)
+			scene.Add(shared)
+		}
+	*/
+	points := gen.SurfaceBoundsLeaf("-f+f+f-|-f+f+f", 3.0, (22.5/360.0)*(2.0*math.Pi))
+	triangles := gen.TriangulateConvexPolygon(points, diffMat)
+	scene.Add(m.NewSharedObject(m.NewTriangleComplexObject(triangles), transform))
 
 	//complex := m.NewComplexObject(objects)
 	//fmt.Println(SaveObj(complex))
@@ -63,7 +68,7 @@ func main() {
 	//points := gen.CenterPointsOnOrigin(s)
 	scene.Precompute()
 
-	from, to := m.Vector{0, 2, 0}, m.Vector{0, 0, 10}
+	from, to := m.Vector{0, 2, -10}, m.Vector{0, 0, 10}
 	camera.LookAt(from, to, ey)
 	params := render.Params{
 		Scene:        scene,

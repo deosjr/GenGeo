@@ -11,14 +11,12 @@ import (
 // the side is made by pairwise joining the points of front and back
 func ExtrudeSolidFace(points []m.Vector, extrusionVector m.Vector, mat m.Material) m.Object {
 	triangles := []m.Triangle{}
-	// dumb algorithm for front face: join triangles radiating from one point
-	// note: facing is counterclockwise
-	p0 := points[0]
-	for i, p1 := range points[1 : len(points)-1] {
-		p2 := points[i+2]
-		t := m.NewTriangle(p0, p1, p2, mat)
+
+	// front/back faces
+	front := TriangulateConvexPolygon(points, mat)
+	for _, t := range front {
 		triangles = append(triangles, t)
-		exp0, exp1, exp2 := p0.Add(extrusionVector), p1.Add(extrusionVector), p2.Add(extrusionVector)
+		exp0, exp1, exp2 := t.P0.Add(extrusionVector), t.P1.Add(extrusionVector), t.P2.Add(extrusionVector)
 		backT := m.NewTriangle(exp2, exp1, exp0, mat)
 		triangles = append(triangles, backT)
 	}
@@ -30,6 +28,19 @@ func ExtrudeSolidFace(points []m.Vector, extrusionVector m.Vector, mat m.Materia
 	}
 	triangles = append(triangles, JoinPoints([][]m.Vector{points, ex}, mat)...)
 	return m.NewTriangleComplexObject(triangles)
+}
+
+// dumb algorithm for front face: join triangles radiating from one point
+// note: facing is counterclockwise
+func TriangulateConvexPolygon(points []m.Vector, mat m.Material) []m.Triangle {
+	triangles := []m.Triangle{}
+	p0 := points[0]
+	for i, p1 := range points[1 : len(points)-1] {
+		p2 := points[i+2]
+		t := m.NewTriangle(p0, p1, p2, mat)
+		triangles = append(triangles, t)
+	}
+	return triangles
 }
 
 // more complex / less naive:
