@@ -8,13 +8,13 @@ import (
 
 // bezier curve, t in [0-1]
 type bezierCurve struct {
-	ParametricFunction
+	parametricFunction
 	controlPoints []m.Vector
 }
 
 func NewBezierCurve(points []m.Vector) bezierCurve {
 	return bezierCurve{
-		ParametricFunction: parametricFunction{
+		parametricFunction: parametricFunction{
 			f: func(t float64) m.Vector{ return bezierFunc(t, points)},
 		},
 		controlPoints: points,
@@ -34,7 +34,7 @@ func NewCubicBezierCurve(p0, p1, p2, p3 m.Vector) cubicBezierCurve {
 	points := []m.Vector{p0, p1, p2, p3}
 	return cubicBezierCurve{
 		bezierCurve{
-			ParametricFunction: parametricFunction{
+			parametricFunction: parametricFunction{
 				f: func(t float64) m.Vector{ return cubicBezierFunc(t, p0, p1, p2, p3)},
 			},
 			controlPoints: points,
@@ -71,7 +71,7 @@ func NewQuadraticBezierCurve(p0, p1, p2 m.Vector) quadraticBezierCurve {
 	points := []m.Vector{p0, p1, p2}
 	return quadraticBezierCurve{
 		bezierCurve{
-			ParametricFunction: parametricFunction{
+			parametricFunction: parametricFunction{
 				f: func(t float64) m.Vector{ return quadraticBezierFunc(t, p0, p1, p2)},
 			},
 			controlPoints: points,
@@ -103,7 +103,7 @@ func NewLinearBezierCurve(p0, p1 m.Vector) linearBezierCurve {
 	points := []m.Vector{p0, p1}
 	return linearBezierCurve{
 		bezierCurve{
-			ParametricFunction: parametricFunction{
+			parametricFunction: parametricFunction{
 				f: func(t float64) m.Vector{ return linearBezierFunc(t, p0, p1)},
 			},
 			controlPoints: points,
@@ -115,9 +115,12 @@ func linearBezierFunc(t float64, p0, p1 m.Vector) m.Vector {
 	return p0.Times(float32(1-t)).Add(p1.Times(float32(t)))
 }
 
+type ParametricSurface interface {
+	Evaluate(u, v float64) m.Vector
+	Triangulate(samples int, mat m.Material) m.Object
+}
 
 type bicubicBezierPatch struct {
-	// ParametricSurface
 	controlPoints []m.Vector // len 16
 }
 
@@ -138,3 +141,21 @@ func (b bicubicBezierPatch) Evaluate(u, v float64) m.Vector {
 	}
 	return cubicBezierFunc(v, p[0], p[1], p[2], p[3])
 }
+
+// samples is number of triangles in one dimension of the surface,
+// for samples*samples amount of triangles in total
+func (b bicubicBezierPatch) Triangulate(samples int, mat m.Material) m.Object {
+	triangles := []m.Triangle{}
+	for u:=0; u<samples-1; u++ {
+		for v:=0; v<samples-1; v++ {
+			f64s := float64(samples-1)
+			llhc := b.Evaluate(float64(u)/f64s, float64(v)/f64s)
+			lrhc := b.Evaluate(float64(u+1)/f64s, float64(v)/f64s)
+			ulhc := b.Evaluate(float64(u)/f64s, float64(v+1)/f64s)
+			urhc := b.Evaluate(float64(u+1)/f64s, float64(v+1)/f64s)
+			triangles = append(triangles, m.NewTriangle(lrhc, llhc, ulhc, mat))
+			triangles = append(triangles, m.NewTriangle(lrhc, ulhc, urhc, mat))
+		}
+	}
+	return m.NewTriangleComplexObject(triangles)
+} 
