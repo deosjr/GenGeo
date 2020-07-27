@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"math"
+	"math/rand"
+	"time"
 
 	m "github.com/deosjr/GRayT/src/model"
 	"github.com/deosjr/GRayT/src/render"
@@ -28,9 +30,9 @@ func main() {
 	l1 := m.NewDistantLight(m.Vector{1, -1, 1}, m.NewColor(255, 255, 255), 50)
 	scene.AddLights(l1)
 
-	m.SetBackgroundColor(m.NewColor(200, 200, 200))
+	rand.Seed(time.Now().Unix())
 
-	diffMat := &m.DiffuseMaterial{Color: m.NewColor(250, 0, 0)}
+	m.SetBackgroundColor(m.NewColor(200, 200, 200))
 
 	patches, err := LoadPatches("teapot")
 	if err != nil {
@@ -43,6 +45,7 @@ func main() {
 	//scale := m.Scale(1, 4.0/3.0, 1)
 	transformation := translation.Mul(rotation)//.Mul(scale)
 	for _, patch := range patches {
+		diffMat := &m.DiffuseMaterial{Color: m.NewColor(uint8(rand.Intn(255)), uint8(rand.Intn(255)), uint8(rand.Intn(255)))}
 		complexObject := patch.Triangulate(32, diffMat)
 		// not really a mesh but I guess thats WIP
 		patchMesh := m.NewSharedObject(complexObject, transformation)

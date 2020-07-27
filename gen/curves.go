@@ -59,11 +59,7 @@ func (s sphere) NormalMappedSphere(transform m.Transform, mat m.Material, n int)
 		},
 	}
 	triangles := s.Triangulate(n, nmat)
-	objs := make([]m.Object, len(triangles))
-	for i, t := range triangles {
-		objs[i] = t
-	}
-	complexObject := m.NewComplexObject(objs)
+	complexObject := m.NewTriangleComplexObject(triangles)
 	return m.NewSharedObject(complexObject, transform)
 }
 
