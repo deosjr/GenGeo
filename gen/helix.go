@@ -12,7 +12,7 @@ func NewHelix(a, b func(t float64) float64) helix {
 }
 
 func (h helix) Function() ParametricFunction {
-	return parametricFunction{
+	return parametricFunctionPiecewise{
 		x: func(t float64) float64 { return h.a(t) * math.Cos(t) },
 		y: func(t float64) float64 { return h.a(t) * math.Sin(t) },
 		z: func(t float64) float64 { return h.b(t) * t },
@@ -20,7 +20,7 @@ func (h helix) Function() ParametricFunction {
 }
 
 func (h helix) Derivative() ParametricFunction {
-	return parametricFunction{
+	return parametricFunctionPiecewise{
 		x: func(t float64) float64 { return -h.a(t) * math.Sin(t) },
 		y: func(t float64) float64 { return h.a(t) * math.Cos(t) },
 		z: func(t float64) float64 { return h.b(t) },
@@ -28,7 +28,7 @@ func (h helix) Derivative() ParametricFunction {
 }
 
 func (h helix) SecondDerivative() ParametricFunction {
-	return parametricFunction{
+	return parametricFunctionPiecewise{
 		x: func(t float64) float64 { return -h.a(t) * math.Cos(t) },
 		y: func(t float64) float64 { return -h.a(t) * math.Sin(t) },
 		z: func(t float64) float64 { return 0.0 },

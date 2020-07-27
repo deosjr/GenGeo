@@ -30,51 +30,23 @@ func main() {
 
 	m.SetBackgroundColor(m.NewColor(200, 200, 200))
 
-	translation := m.Translate(m.Vector{0, 0.5, -9})
-	rotation := m.RotateY(math.Pi / 16.0)
-	transform := translation.Mul(rotation)
-
 	diffMat := &m.DiffuseMaterial{Color: m.NewColor(250, 0, 0)}
-	leafMat := &m.DiffuseMaterial{Color: m.NewColor(0, 250, 0)}
-	flowerMat := &m.DiffuseMaterial{Color: m.NewColor(250, 250, 250)}
 
-	//segments := gen.HilbertCurve3D(3)
-	//segments := gen.Branch3D(7)
-	segments := gen.Branch3D_2(5)
-	objects := []m.Object{}
-	for _, segment := range segments {
-		points := segment.GetPoints()
+	p0 := m.Vector{0.70, 0.74, 0.0}
+	p1 := m.Vector{0.26, 2.22, 0.0}
+	p2 := m.Vector{2.20, 2.60, 0.0}
+	p3 := m.Vector{1.90, 1.23, 0.0}
+	bezier := gen.NewCubicBezier(p0, p1, p2, p3)
 
-		switch segment.(type) {
+	radial2d := gen.NewRadialCircleConstantRadius(0.01, 20)
+	numSteps := 101
+	stepSize := 1.0 / 101.0
+	complexObject := gen.NewParametricObject(bezier, radial2d, numSteps, stepSize, diffMat).Build()
 
-		case gen.Lleaf:
-
-			revPoints := make([]m.Vector, len(points))
-			for i, p := range points {
-				revPoints[len(points)-i-1] = p
-			}
-			var mat m.Material
-			var ps []m.Vector
-			if len(points) == 9 {
-				mat = leafMat
-				ps = revPoints
-			} else {
-				mat = flowerMat
-				ps = points
-			}
-			triangles := gen.TriangulateConvexPolygon(ps, mat)
-			scene.Add(m.NewSharedObject(m.NewTriangleComplexObject(triangles), transform))
-
-		case gen.Lbranch:
-
-			radial := gen.NewRadialCircle(func(t float64) float32 { return 0.005 }, 10)
-			o := gen.BuildFromPoints(radial, points, diffMat)
-			objects = append(objects, o)
-			shared := m.NewSharedObject(o, transform)
-			scene.Add(shared)
-
-		}
-	}
+	translation := m.Translate(m.Vector{0, 1, 2})
+	rotation := m.RotateY(math.Pi)
+	boom := m.NewSharedObject(complexObject, translation.Mul(rotation))
+	scene.Add(boom)
 
 	//complex := m.NewComplexObject(objects)
 	//fmt.Println(SaveObj(complex))
@@ -82,7 +54,7 @@ func main() {
 	//points := gen.CenterPointsOnOrigin(s)
 	scene.Precompute()
 
-	from, to := m.Vector{0, 2, -10}, m.Vector{0, 0, 10}
+	from, to := m.Vector{0, 2, 0}, m.Vector{0, 0, 10}
 	camera.LookAt(from, to, ey)
 	params := render.Params{
 		Scene:        scene,

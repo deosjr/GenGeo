@@ -11,6 +11,7 @@ type ParametricFunction interface {
 	Y(t float64) float64
 	Z(t float64) float64
 	Vector(t float64) m.Vector
+	Function() ParametricFunction
 }
 
 // class C2 functions have a continuous first and second derivative
@@ -47,34 +48,62 @@ func (c c2) SecondDerivative() ParametricFunction {
 }
 
 type parametricFunction struct {
+	f func(t float64) m.Vector
+}
+
+func NewParametricFunction(f func(t float64) m.Vector) parametricFunction {
+	return parametricFunction{
+		f: f,
+	}
+}
+
+func (f parametricFunction) X(t float64) float64 {
+	return float64(f.f(t).X)
+}
+func (f parametricFunction) Y(t float64) float64 {
+	return float64(f.f(t).Y)
+}
+func (f parametricFunction) Z(t float64) float64 {
+	return float64(f.f(t).Z)
+}
+
+func (f parametricFunction) Vector(t float64) m.Vector {
+	return f.f(t)
+}
+
+func (f parametricFunction) Function() ParametricFunction {
+	return f
+}
+
+type parametricFunctionPiecewise struct {
 	x func(t float64) float64
 	y func(t float64) float64
 	z func(t float64) float64
 }
 
-func NewParametricFunction(x, y, z func(t float64) float64) parametricFunction {
-	return parametricFunction{
+func NewParametricFunctionPiecewise(x, y, z func(t float64) float64) parametricFunctionPiecewise {
+	return parametricFunctionPiecewise{
 		x: x,
 		y: y,
 		z: z,
 	}
 }
 
-func (f parametricFunction) X(t float64) float64 {
+func (f parametricFunctionPiecewise) X(t float64) float64 {
 	return f.x(t)
 }
-func (f parametricFunction) Y(t float64) float64 {
+func (f parametricFunctionPiecewise) Y(t float64) float64 {
 	return f.y(t)
 }
-func (f parametricFunction) Z(t float64) float64 {
+func (f parametricFunctionPiecewise) Z(t float64) float64 {
 	return f.z(t)
 }
 
-func (f parametricFunction) Vector(t float64) m.Vector {
+func (f parametricFunctionPiecewise) Vector(t float64) m.Vector {
 	return m.Vector{float32(f.x(t)), float32(f.y(t)), float32(f.z(t))}
 }
 
-func (f parametricFunction) Function() ParametricFunction {
+func (f parametricFunctionPiecewise) Function() ParametricFunction {
 	return f
 }
 
@@ -152,8 +181,14 @@ type radialEllipse struct {
 func NewRadialEllipse(a, b func(t float64) float32, n int) radialEllipse {
 	return radialEllipse{radiusx: a, radiusy: b, numPoints: n}
 }
+func NewRadialEllipseConstantRadii(a, b float32, n int) radialEllipse {
+	return NewRadialEllipse(func(t float64) float32 { return a }, func(t float64) float32 { return b}, n)
+}
 func NewRadialCircle(radius func(t float64) float32, n int) radialEllipse {
 	return radialEllipse{radiusx: radius, radiusy: radius, numPoints: n}
+}
+func NewRadialCircleConstantRadius(r float32, n int) radialEllipse {
+	return NewRadialEllipseConstantRadii(r, r, n)
 }
 
 func (re radialEllipse) Points(p, normal, binormal m.Vector, t float64) []m.Vector {

@@ -8,30 +8,22 @@ import (
 
 // bezier curve, t in [0-1]
 type bezier struct {
-	parametricFunction
+	ParametricFunction
 	controlPoints []m.Vector
 }
 
 func NewBezier(points []m.Vector) bezier {
 	return bezier{
-		parametricFunction: parametricFunction{
-			x: parametrizeBezierFunc(bezierFunc, points, m.X),
-			y: parametrizeBezierFunc(bezierFunc, points, m.Y),
-			z: parametrizeBezierFunc(bezierFunc, points, m.Z),
+		ParametricFunction: parametricFunction{
+			f: func(t float64) m.Vector{ return bezierFunc(t, points)},
 		},
 		controlPoints: points,
 	}
 }
 
-func parametrizeBezierFunc(f func(float64, []m.Vector, m.Dimension) float64, points []m.Vector, d m.Dimension) func(float64) float64 {
-	return func(t float64) float64 {
-		return f(t, points, d)
-	}
-}
-
-func bezierFunc(t float64, points []m.Vector, d m.Dimension) float64 {
+func bezierFunc(t float64, points []m.Vector) m.Vector {
 	//TODO, dont feel like implementing binomials etc right now
-	return 0.0
+	return m.Vector{} 
 }
 
 type cubicBezier struct {
@@ -42,21 +34,21 @@ func NewCubicBezier(p0, p1, p2, p3 m.Vector) cubicBezier {
 	points := []m.Vector{p0, p1, p2, p3}
 	return cubicBezier{
 		bezier{
-			parametricFunction: parametricFunction{
-				x: parametrizeBezierFunc(cubicBezierFunc, points, m.X),
-				y: parametrizeBezierFunc(cubicBezierFunc, points, m.Y),
-				z: parametrizeBezierFunc(cubicBezierFunc, points, m.Z),
+			ParametricFunction: parametricFunction{
+				f: func(t float64) m.Vector{ return cubicBezierFunc(t, points)},
 			},
 			controlPoints: points,
 		},
 	}
 }
 
-func cubicBezierFunc(t float64, points []m.Vector, d m.Dimension) float64 {
+func cubicBezierFunc(t float64, points []m.Vector) m.Vector {
 	p0, p1, p2, p3 := points[0], points[1], points[2], points[3]
-	p0d, p1d, p2d, p3d := float64(p0.Get(d)), float64(p1.Get(d)), float64(p2.Get(d)), float64(p3.Get(d))
-	return p0d*math.Pow((1-t), 3) + p1d*3*math.Pow((1-t), 2)*t +
-		p2d*3*(1-t)*math.Pow(t, 2) + p3d*math.Pow(t, 3)
+	k0 := float32(math.Pow((1-t), 3))
+	k1 := float32(3*t*math.Pow((1-t), 2))
+	k2 := float32(3*(1-t)*math.Pow(t, 2))
+	k3 := float32(math.Pow(t, 3))
+	return p0.Times(k0).Add(p1.Times(k1)).Add(p2.Times(k2)).Add(p3.Times(k3))
 }
 
 func (b cubicBezier) Derivative() ParametricFunction {
@@ -80,20 +72,20 @@ func NewQuadraticBezier(p0, p1, p2 m.Vector) quadraticBezier {
 	points := []m.Vector{p0, p1, p2}
 	return quadraticBezier{
 		bezier{
-			parametricFunction: parametricFunction{
-				x: parametrizeBezierFunc(quadraticBezierFunc, points, m.X),
-				y: parametrizeBezierFunc(quadraticBezierFunc, points, m.Y),
-				z: parametrizeBezierFunc(quadraticBezierFunc, points, m.Z),
+			ParametricFunction: parametricFunction{
+				f: func(t float64) m.Vector{ return quadraticBezierFunc(t, points)},
 			},
 			controlPoints: points,
 		},
 	}
 }
 
-func quadraticBezierFunc(t float64, points []m.Vector, d m.Dimension) float64 {
+func quadraticBezierFunc(t float64, points []m.Vector) m.Vector {
 	p0, p1, p2 := points[0], points[1], points[2]
-	p0d, p1d, p2d := float64(p0.Get(d)), float64(p1.Get(d)), float64(p2.Get(d))
-	return p0d*math.Pow((1-t), 2) + p1d*2*(1-t)*t + p2d*math.Pow(t, 2)
+	k0 := float32(math.Pow((1-t), 2))
+	k1 := float32(2*(1-t)*t)
+	k2 := float32(math.Pow(t, 2))
+	return p0.Times(k0).Add(p1.Times(k1)).Add(p2.Times(k2))
 }
 
 func (b quadraticBezier) Derivative() ParametricFunction {
@@ -113,18 +105,15 @@ func NewLinearBezier(p0, p1 m.Vector) linearBezier {
 	points := []m.Vector{p0, p1}
 	return linearBezier{
 		bezier{
-			parametricFunction: parametricFunction{
-				x: parametrizeBezierFunc(linearBezierFunc, points, m.X),
-				y: parametrizeBezierFunc(linearBezierFunc, points, m.Y),
-				z: parametrizeBezierFunc(linearBezierFunc, points, m.Z),
+			ParametricFunction: parametricFunction{
+				f: func(t float64) m.Vector{ return linearBezierFunc(t, points)},
 			},
 			controlPoints: points,
 		},
 	}
 }
 
-func linearBezierFunc(t float64, points []m.Vector, d m.Dimension) float64 {
+func linearBezierFunc(t float64, points []m.Vector) m.Vector {
 	p0, p1 := points[0], points[1]
-	p0d, p1d := float64(p0.Get(d)), float64(p1.Get(d))
-	return p0d*(1-t) + p1d*t
+	return p0.Times(float32(1-t)).Add(p1.Times(float32(t)))
 }
