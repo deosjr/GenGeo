@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"math"
+	"math/rand"
+	"time"
 
 	m "github.com/deosjr/GRayT/src/model"
 	"github.com/deosjr/GRayT/src/render"
@@ -32,19 +34,31 @@ func main() {
 
 	diffMat := &m.DiffuseMaterial{Color: m.NewColor(250, 0, 0)}
 
-	p0 := m.Vector{0.70, 0.74, 0.0}
-	p1 := m.Vector{0.26, 2.22, 0.0}
-	p2 := m.Vector{2.20, 2.60, 0.0}
-	p3 := m.Vector{1.90, 1.23, 0.0}
-	bezier := gen.NewCubicBezier(p0, p1, p2, p3)
-
-	radial2d := gen.NewRadialCircleConstantRadius(0.01, 20)
-	numSteps := 101
-	stepSize := 1.0 / 101.0
-	complexObject := gen.NewParametricObject(bezier, radial2d, numSteps, stepSize, diffMat).Build()
+	rand.Seed(time.Now().UTC().UnixNano())
+	controlP := make([]m.Vector, 16)
+	for i:=0; i < 4; i++ {
+		controlP[i*4] = m.Vector{float32(i), rand.Float32(), 0}
+		controlP[i*4+1] = m.Vector{float32(i), rand.Float32(), 1}
+		controlP[i*4+2] = m.Vector{float32(i), rand.Float32(), 2}
+		controlP[i*4+3] = m.Vector{float32(i), rand.Float32(), 3}
+	}
+	patch := gen.NewBicubicBezierPatch(controlP)
+	triangles := []m.Triangle{}
+	samples := 16
+	for u:=0; u<samples-1; u++ {
+		for v:=0; v<samples-1; v++ {
+			llhc := patch.Evaluate(float64(u)/float64(samples), float64(v)/float64(samples))
+			lrhc := patch.Evaluate(float64(u+1)/float64(samples), float64(v)/float64(samples))
+			ulhc := patch.Evaluate(float64(u)/float64(samples), float64(v+1)/float64(samples))
+			urhc := patch.Evaluate(float64(u+1)/float64(samples), float64(v+1)/float64(samples))
+			triangles = append(triangles, m.NewTriangle(lrhc, llhc, ulhc, diffMat))
+			triangles = append(triangles, m.NewTriangle(lrhc, ulhc, urhc, diffMat))
+		}
+	}
 
 	translation := m.Translate(m.Vector{0, 1, 2})
-	rotation := m.RotateY(math.Pi)
+	rotation := m.RotateY(math.Pi).Mul(m.RotateX(math.Pi/8.0))
+	complexObject := m.NewTriangleComplexObject(triangles)
 	boom := m.NewSharedObject(complexObject, translation.Mul(rotation))
 	scene.Add(boom)
 
@@ -54,7 +68,7 @@ func main() {
 	//points := gen.CenterPointsOnOrigin(s)
 	scene.Precompute()
 
-	from, to := m.Vector{0, 2, 0}, m.Vector{0, 0, 10}
+	from, to := m.Vector{0, 2, -5}, m.Vector{0, 0, 10}
 	camera.LookAt(from, to, ey)
 	params := render.Params{
 		Scene:        scene,
