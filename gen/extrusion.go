@@ -37,7 +37,7 @@ func TriangulateConvexPolygon(points []m.Vector, mat m.Material) []m.Triangle {
 	p0 := points[0]
 	for i, p1 := range points[1 : len(points)-1] {
 		p2 := points[i+2]
-		t := m.NewTriangle(p0, p1, p2, mat)
+		t := m.NewTriangle(p2, p1, p0, mat)
 		triangles = append(triangles, t)
 	}
 	return triangles
