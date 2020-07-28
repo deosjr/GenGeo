@@ -32,7 +32,7 @@ func TestCubicBezier(t *testing.T) {
 			want: m.Vector{10, 11, 12},
 		},
 	} {
-		bezier := NewCubicBezier(tt.p0, tt.p1, tt.p2, tt.p3)
+		bezier := NewCubicBezierCurve(tt.p0, tt.p1, tt.p2, tt.p3)
 		got := bezier.Vector(tt.t)
 		if !compareVector(got, tt.want) {
 			t.Errorf("%d): got %v want %v", i, got, tt.want)

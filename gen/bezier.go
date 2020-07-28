@@ -153,8 +153,8 @@ func (b bicubicBezierPatch) Triangulate(samples int, mat m.Material) m.Object {
 			lrhc := b.Evaluate(float64(u+1)/f64s, float64(v)/f64s)
 			ulhc := b.Evaluate(float64(u)/f64s, float64(v+1)/f64s)
 			urhc := b.Evaluate(float64(u+1)/f64s, float64(v+1)/f64s)
-			triangles = append(triangles, m.NewTriangle(lrhc, llhc, ulhc, mat))
-			triangles = append(triangles, m.NewTriangle(lrhc, ulhc, urhc, mat))
+			triangles = append(triangles, m.NewTriangle(llhc, lrhc, ulhc, mat))
+			triangles = append(triangles, m.NewTriangle(lrhc, urhc, ulhc, mat))
 		}
 	}
 	return m.NewTriangleComplexObject(triangles)

@@ -94,13 +94,13 @@ func AxisAlignedOctahedron(p m.Vector, r float32, mat m.Material) []m.Triangle {
 	minY, maxY := m.Vector{p.X, p.Y - r, p.Z}, m.Vector{p.X, p.Y + r, p.Z}
 	minZ, maxZ := m.Vector{p.X, p.Y, p.Z - r}, m.Vector{p.X, p.Y, p.Z + r}
 	return []m.Triangle{
-		m.NewTriangle(maxZ, minX, maxY, mat),
-		m.NewTriangle(minX, minZ, maxY, mat),
-		m.NewTriangle(minZ, maxX, maxY, mat),
-		m.NewTriangle(maxX, maxZ, maxY, mat),
-		m.NewTriangle(minX, maxZ, minY, mat),
-		m.NewTriangle(minZ, minX, minY, mat),
-		m.NewTriangle(maxX, minZ, minY, mat),
-		m.NewTriangle(maxZ, maxX, minY, mat),
+		m.NewTriangle(minX, maxZ, maxY, mat),
+		m.NewTriangle(minZ, minX, maxY, mat),
+		m.NewTriangle(maxX, minZ, maxY, mat),
+		m.NewTriangle(maxZ, maxX, maxY, mat),
+		m.NewTriangle(maxZ, minX, minY, mat),
+		m.NewTriangle(minX, minZ, minY, mat),
+		m.NewTriangle(minZ, maxX, minY, mat),
+		m.NewTriangle(maxX, maxZ, minY, mat),
 	}
 }

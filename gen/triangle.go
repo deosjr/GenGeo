@@ -27,11 +27,11 @@ func JoinPoints(pointLists [][]m.Vector, mat m.Material) []m.Triangle {
 		c1 := pointLists[i]
 		c2 := pointLists[i+1]
 
-		triangles[offset] = m.NewTriangle(c1[numPoints-1], c2[numPoints-1], c1[0], mat)
-		triangles[offset+1] = m.NewTriangle(c2[numPoints-1], c2[0], c1[0], mat)
+		triangles[offset] = m.NewTriangle(c1[0], c1[numPoints-1], c2[numPoints-1], mat)
+		triangles[offset+1] = m.NewTriangle(c1[0], c2[numPoints-1], c2[0], mat)
 		for j := 0; j < numPoints-1; j++ {
-			triangles[offset+(j+1)*2] = m.NewTriangle(c1[j], c2[j], c1[j+1], mat)
-			triangles[offset+(j+1)*2+1] = m.NewTriangle(c2[j], c2[j+1], c1[j+1], mat)
+			triangles[offset+(j+1)*2] = m.NewTriangle(c1[j], c1[j+1], c2[j], mat)
+			triangles[offset+(j+1)*2+1] = m.NewTriangle(c2[j], c1[j+1], c2[j+1], mat)
 		}
 	}
 	return triangles
@@ -51,8 +51,8 @@ func JoinPointsNonCircular(pointLists [][]m.Vector, mat m.Material) []m.Triangle
 		c2 := pointLists[i+1]
 
 		for j := 0; j < numPoints-1; j++ {
-			triangles[offset+j*2] = m.NewTriangle(c1[j], c2[j], c1[j+1], mat)
-			triangles[offset+j*2+1] = m.NewTriangle(c2[j], c2[j+1], c1[j+1], mat)
+			triangles[offset+j*2] = m.NewTriangle(c1[j], c1[j+1], c2[j], mat)
+			triangles[offset+j*2+1] = m.NewTriangle(c2[j], c1[j+1], c2[j+1], mat)
 		}
 	}
 	return triangles
