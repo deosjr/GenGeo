@@ -3,12 +3,9 @@ package main
 import (
 	"fmt"
 	"math"
-	"math/rand"
-	"time"
 
 	m "github.com/deosjr/GRayT/src/model"
 	"github.com/deosjr/GRayT/src/render"
-	//"github.com/deosjr/GenGeo/gen"
 )
 
 var (
@@ -30,11 +27,11 @@ func main() {
 	l1 := m.NewDistantLight(m.Vector{1, -1, 1}, m.NewColor(255, 255, 255), 50)
 	scene.AddLights(l1)
 
-	rand.Seed(time.Now().Unix())
-
 	m.SetBackgroundColor(m.NewColor(200, 200, 200))
 
-	patches, err := LoadPatches("teapot")
+	diffMat := &m.DiffuseMaterial{Color: m.NewColor(250, 0, 0)}
+
+    patches, err := LoadPatches("teapot")
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -45,8 +42,8 @@ func main() {
 	//scale := m.Scale(1, 4.0/3.0, 1)
 	transformation := translation.Mul(rotation)//.Mul(scale)
 	for _, patch := range patches {
-		diffMat := &m.DiffuseMaterial{Color: m.NewColor(uint8(rand.Intn(255)), uint8(rand.Intn(255)), uint8(rand.Intn(255)))}
-		complexObject := patch.Triangulate(32, diffMat)
+		//diffMat := &m.DiffuseMaterial{Color: m.NewColor(uint8(rand.Intn(255)), uint8(rand.Intn(255)), uint8(rand.Intn(255)))}
+		complexObject := patch.TriangulateWithNormalMapping(32, diffMat, transformation)
 		// not really a mesh but I guess thats WIP
 		patchMesh := m.NewSharedObject(complexObject, transformation)
 		scene.Add(patchMesh)
@@ -67,3 +64,4 @@ func main() {
 	film := render.Render(params)
 	film.SaveAsPNG("out.png")
 }
+

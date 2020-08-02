@@ -23,7 +23,7 @@ func NewBezierCurve(points []m.Vector) bezierCurve {
 
 func bezierFunc(t float64, points []m.Vector) m.Vector {
 	//TODO, dont feel like implementing binomials etc right now
-	return m.Vector{} 
+	return m.Vector{}
 }
 
 type cubicBezierCurve struct {
@@ -118,6 +118,7 @@ func linearBezierFunc(t float64, p0, p1 m.Vector) m.Vector {
 type ParametricSurface interface {
 	Evaluate(u, v float64) m.Vector
 	Triangulate(samples int, mat m.Material) m.Object
+	TriangulateWithNormalMapping(samples int, mat m.Material, transform m.Transform) m.Object
 }
 
 type bicubicBezierPatch struct {
@@ -146,9 +147,9 @@ func (b bicubicBezierPatch) Evaluate(u, v float64) m.Vector {
 // for samples*samples amount of triangles in total
 func (b bicubicBezierPatch) Triangulate(samples int, mat m.Material) m.Object {
 	triangles := []m.Triangle{}
-	for u:=0; u<samples-1; u++ {
-		for v:=0; v<samples-1; v++ {
-			f64s := float64(samples-1)
+	for u:=0; u<samples; u++ {
+		for v:=0; v<samples; v++ {
+			f64s := float64(samples)
 			llhc := b.Evaluate(float64(u)/f64s, float64(v)/f64s)
 			lrhc := b.Evaluate(float64(u+1)/f64s, float64(v)/f64s)
 			ulhc := b.Evaluate(float64(u)/f64s, float64(v+1)/f64s)
@@ -158,4 +159,87 @@ func (b bicubicBezierPatch) Triangulate(samples int, mat m.Material) m.Object {
 		}
 	}
 	return m.NewTriangleComplexObject(triangles)
-} 
+}
+
+func dUBezier(controlPoints []m.Vector, u64, v float64) m.Vector {
+    p := make([]m.Vector, 4)
+    for i:=0;i<4;i++ {
+        p0 := controlPoints[i]
+        p1 := controlPoints[i+4]
+        p2 := controlPoints[i+8]
+        p3 := controlPoints[i+12]
+        p[i] = cubicBezierFunc(v, p0, p1, p2, p3)
+    }
+    u := float32(u64)
+    v1 := p[0].Times(-3 * (1-u) * (1-u))
+    v2 := p[1].Times((3 * (1-u) * (1-u)) - (6 * u * (1-u)))
+    v3 := p[2].Times((6 * u * (1-u)) - (3 * u * u))
+    v4 := p[3].Times(3 * u * u)
+    return v1.Add(v2).Add(v3).Add(v4)
+}
+
+func dVBezier(controlPoints []m.Vector, u, v64 float64) m.Vector {
+    p := make([]m.Vector, 4)
+    for i:=0;i<4;i++ {
+        p0 := controlPoints[i*4]
+        p1 := controlPoints[i*4+1]
+        p2 := controlPoints[i*4+2]
+        p3 := controlPoints[i*4+3]
+        p[i] = cubicBezierFunc(u, p0, p1, p2, p3)
+    }
+    v := float32(v64)
+    v1 := p[0].Times(-3 * (1-v) * (1-v))
+    v2 := p[1].Times((3 * (1-v) * (1-v)) - (6 * v * (1-v)))
+    v3 := p[2].Times((6 * v * (1-v)) - (3 * v * v))
+    v4 := p[3].Times(3 * v * v)
+    return v1.Add(v2).Add(v3).Add(v4)
+}
+
+func (b bicubicBezierPatch) normal(u, v float64) m.Vector {
+    dU := dUBezier(b.controlPoints, u, v)
+    dV := dVBezier(b.controlPoints, u, v)
+    return dU.Cross(dV).Normalize()
+}
+
+// TODO: should be stored on the triangle meshes
+var tempMap = map[m.Vector]m.Vector{}
+
+// TODO: store vertex normals and use them instead of relying on closures 
+// if nothing else, will make debugging easier
+func (b bicubicBezierPatch) TriangulateWithNormalMapping(samples int, baseMat m.Material, transform m.Transform) m.Object {
+	triangles := []m.Triangle{}
+	for u:=0; u<samples; u++ {
+		for v:=0; v<samples; v++ {
+			f64s := float64(samples)
+			llhc := b.Evaluate(float64(u)/f64s, float64(v)/f64s)
+			nllhc := b.normal(float64(u)/f64s, float64(v)/f64s)
+			lrhc := b.Evaluate(float64(u+1)/f64s, float64(v)/f64s)
+			nlrhc := b.normal(float64(u+1)/f64s, float64(v)/f64s)
+			ulhc := b.Evaluate(float64(u)/f64s, float64(v+1)/f64s)
+			nulhc := b.normal(float64(u)/f64s, float64(v+1)/f64s)
+			urhc := b.Evaluate(float64(u+1)/f64s, float64(v+1)/f64s)
+			nurhc := b.normal(float64(u+1)/f64s, float64(v+1)/f64s)
+
+            tempMap[llhc] = nllhc
+            tempMap[lrhc] = nlrhc
+            tempMap[ulhc] = nulhc
+            tempMap[urhc] = nurhc
+
+            mat := &m.NormalMappingMaterial{
+                WrappedMaterial: baseMat,
+                NormalFunc: func(si *m.SurfaceInteraction) m.Vector {
+                    tr := si.GetObject().(m.Triangle)
+			        p := transform.Inverse().Point(si.Point)
+                    l0, l1, l2 := tr.Barycentric(p)
+                    nl0 := tempMap[tr.P0]
+                    nl1 := tempMap[tr.P1]
+                    nl2 := tempMap[tr.P2]
+                    return nl0.Times(l0).Add(nl1.Times(l1)).Add(nl2.Times(l2))
+                },
+            }
+			triangles = append(triangles, m.NewTriangle(llhc, lrhc, ulhc, mat))
+			triangles = append(triangles, m.NewTriangle(lrhc, urhc, ulhc, mat))
+		}
+	}
+	return m.NewTriangleComplexObject(triangles)
+}
