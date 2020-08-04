@@ -146,19 +146,14 @@ func (b bicubicBezierPatch) Evaluate(u, v float64) m.Vector {
 // samples is number of triangles in one dimension of the surface,
 // for samples*samples amount of triangles in total
 func (b bicubicBezierPatch) Triangulate(samples int, mat m.Material) m.Object {
-	triangles := []m.Triangle{}
-	for u:=0; u<samples; u++ {
-		for v:=0; v<samples; v++ {
-			f64s := float64(samples)
-			llhc := b.Evaluate(float64(u)/f64s, float64(v)/f64s)
-			lrhc := b.Evaluate(float64(u+1)/f64s, float64(v)/f64s)
-			ulhc := b.Evaluate(float64(u)/f64s, float64(v+1)/f64s)
-			urhc := b.Evaluate(float64(u+1)/f64s, float64(v+1)/f64s)
-			triangles = append(triangles, m.NewTriangle(llhc, lrhc, ulhc, mat))
-			triangles = append(triangles, m.NewTriangle(lrhc, urhc, ulhc, mat))
-		}
-	}
-	return m.NewTriangleComplexObject(triangles)
+    vertices := make([]m.Vector, (samples+1)*(samples+1))
+    f64s := float64(samples)
+	for v:=0; v<=samples; v++ {
+		for u:=0; u<=samples; u++ {
+            vertices[v*(samples+1)+u] = b.Evaluate(float64(u)/f64s, float64(v)/f64s)
+        }
+    }
+    return m.NewGridTriangleMesh(samples, samples, vertices, nil, mat)
 }
 
 func dUBezier(controlPoints []m.Vector, u64, v float64) m.Vector {
@@ -170,12 +165,7 @@ func dUBezier(controlPoints []m.Vector, u64, v float64) m.Vector {
         p3 := controlPoints[i+12]
         p[i] = cubicBezierFunc(v, p0, p1, p2, p3)
     }
-    u := float32(u64)
-    v1 := p[0].Times(-3 * (1-u) * (1-u))
-    v2 := p[1].Times((3 * (1-u) * (1-u)) - (6 * u * (1-u)))
-    v3 := p[2].Times((6 * u * (1-u)) - (3 * u * u))
-    v4 := p[3].Times(3 * u * u)
-    return v1.Add(v2).Add(v3).Add(v4)
+    return bicubicPartialDerivative(p, u64)
 }
 
 func dVBezier(controlPoints []m.Vector, u, v64 float64) m.Vector {
@@ -187,11 +177,17 @@ func dVBezier(controlPoints []m.Vector, u, v64 float64) m.Vector {
         p3 := controlPoints[i*4+3]
         p[i] = cubicBezierFunc(u, p0, p1, p2, p3)
     }
-    v := float32(v64)
-    v1 := p[0].Times(-3 * (1-v) * (1-v))
-    v2 := p[1].Times((3 * (1-v) * (1-v)) - (6 * v * (1-v)))
-    v3 := p[2].Times((6 * v * (1-v)) - (3 * v * v))
-    v4 := p[3].Times(3 * v * v)
+    return bicubicPartialDerivative(p, v64)
+}
+
+// partial derivative of bicubic bezier function in (x,y) wrt x
+// where p is precalculated bezier curves along y
+func bicubicPartialDerivative(p []m.Vector, x float64) m.Vector {
+    x32 := float32(x)
+    v1 := p[0].Times(-3 * (1-x32) * (1-x32))
+    v2 := p[1].Times((3 * (1-x32) * (1-x32)) - (6 * x32 * (1-x32)))
+    v3 := p[2].Times((6 * x32 * (1-x32)) - (3 * x32 * x32))
+    v4 := p[3].Times(3 * x32 * x32)
     return v1.Add(v2).Add(v3).Add(v4)
 }
 
@@ -201,45 +197,28 @@ func (b bicubicBezierPatch) normal(u, v float64) m.Vector {
     return dU.Cross(dV).Normalize()
 }
 
-// TODO: should be stored on the triangle meshes
-var tempMap = map[m.Vector]m.Vector{}
-
-// TODO: store vertex normals and use them instead of relying on closures 
-// if nothing else, will make debugging easier
 func (b bicubicBezierPatch) TriangulateWithNormalMapping(samples int, baseMat m.Material, transform m.Transform) m.Object {
-	triangles := []m.Triangle{}
-	for u:=0; u<samples; u++ {
-		for v:=0; v<samples; v++ {
-			f64s := float64(samples)
-			llhc := b.Evaluate(float64(u)/f64s, float64(v)/f64s)
-			nllhc := b.normal(float64(u)/f64s, float64(v)/f64s)
-			lrhc := b.Evaluate(float64(u+1)/f64s, float64(v)/f64s)
-			nlrhc := b.normal(float64(u+1)/f64s, float64(v)/f64s)
-			ulhc := b.Evaluate(float64(u)/f64s, float64(v+1)/f64s)
-			nulhc := b.normal(float64(u)/f64s, float64(v+1)/f64s)
-			urhc := b.Evaluate(float64(u+1)/f64s, float64(v+1)/f64s)
-			nurhc := b.normal(float64(u+1)/f64s, float64(v+1)/f64s)
-
-            tempMap[llhc] = nllhc
-            tempMap[lrhc] = nlrhc
-            tempMap[ulhc] = nulhc
-            tempMap[urhc] = nurhc
-
-            mat := &m.NormalMappingMaterial{
-                WrappedMaterial: baseMat,
-                NormalFunc: func(si *m.SurfaceInteraction) m.Vector {
-                    tr := si.GetObject().(m.Triangle)
-			        p := transform.Inverse().Point(si.Point)
-                    l0, l1, l2 := tr.Barycentric(p)
-                    nl0 := tempMap[tr.P0]
-                    nl1 := tempMap[tr.P1]
-                    nl2 := tempMap[tr.P2]
-                    return nl0.Times(l0).Add(nl1.Times(l1)).Add(nl2.Times(l2))
-                },
-            }
-			triangles = append(triangles, m.NewTriangle(llhc, lrhc, ulhc, mat))
-			triangles = append(triangles, m.NewTriangle(lrhc, urhc, ulhc, mat))
-		}
-	}
-	return m.NewTriangleComplexObject(triangles)
+    mat := &m.NormalMappingMaterial{
+        WrappedMaterial: baseMat,
+        NormalFunc: func(si *m.SurfaceInteraction) m.Vector {
+            tr := si.GetObject().(m.TriangleInMesh)
+            p := transform.Inverse().Point(si.Point)
+            l0, l1, l2 := tr.Barycentric(p)
+            p0, p1, p2 := tr.PointIndices()
+            nl0 := tr.Mesh.Normals[p0]
+            nl1 := tr.Mesh.Normals[p1]
+            nl2 := tr.Mesh.Normals[p2]
+            return nl0.Times(l0).Add(nl1.Times(l1)).Add(nl2.Times(l2))
+        },
+    }
+    vertices := make([]m.Vector, (samples+1)*(samples+1))
+    normals := make([]m.Vector, (samples+1)*(samples+1))
+    f64s := float64(samples)
+	for v:=0; v<=samples; v++ {
+		for u:=0; u<=samples; u++ {
+            vertices[v*(samples+1)+u] = b.Evaluate(float64(u)/f64s, float64(v)/f64s)
+            normals[v*(samples+1)+u] = b.normal(float64(u)/f64s, float64(v)/f64s)
+        }
+    }
+    return m.NewGridTriangleMesh(samples, samples, vertices, normals, mat)
 }
