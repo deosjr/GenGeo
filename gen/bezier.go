@@ -118,7 +118,7 @@ func linearBezierFunc(t float64, p0, p1 m.Vector) m.Vector {
 type ParametricSurface interface {
 	Evaluate(u, v float64) m.Vector
 	Triangulate(samples int, mat m.Material) m.Object
-	TriangulateWithNormalMapping(samples int, mat m.Material, transform m.Transform) m.Object
+	TriangulateWithNormalMapping(samples int, mat m.Material) m.Object
 }
 
 type bicubicBezierPatch struct {
@@ -197,27 +197,16 @@ func (b bicubicBezierPatch) normal(u, v float64) m.Vector {
     return dU.Cross(dV).Normalize()
 }
 
-func (b bicubicBezierPatch) TriangulateWithNormalMapping(samples int, baseMat m.Material, transform m.Transform) m.Object {
-    mat := &m.NormalMappingMaterial{
-        WrappedMaterial: baseMat,
-        NormalFunc: func(si *m.SurfaceInteraction) m.Vector {
-            tr := si.GetObject().(m.TriangleInMesh)
-            p := transform.Inverse().Point(si.Point)
-            l0, l1, l2 := tr.Barycentric(p)
-            p0, p1, p2 := tr.PointIndices()
-            nl0 := tr.Mesh.Normals[p0]
-            nl1 := tr.Mesh.Normals[p1]
-            nl2 := tr.Mesh.Normals[p2]
-            return nl0.Times(l0).Add(nl1.Times(l1)).Add(nl2.Times(l2))
-        },
-    }
+func (b bicubicBezierPatch) TriangulateWithNormalMapping(samples int, baseMat m.Material) m.Object {
+    mat := m.InterpolatedNormalMappingMaterial(baseMat)
     vertices := make([]m.Vector, (samples+1)*(samples+1))
     normals := make([]m.Vector, (samples+1)*(samples+1))
     f64s := float64(samples)
-	for v:=0; v<=samples; v++ {
-		for u:=0; u<=samples; u++ {
-            vertices[v*(samples+1)+u] = b.Evaluate(float64(u)/f64s, float64(v)/f64s)
-            normals[v*(samples+1)+u] = b.normal(float64(u)/f64s, float64(v)/f64s)
+	for intv:=0; intv<=samples; intv++ {
+		for intu:=0; intu<=samples; intu++ {
+            u, v := float64(intu)/f64s, float64(intv)/f64s
+            vertices[intv*(samples+1)+intu] = b.Evaluate(u, v)
+            normals[intv*(samples+1)+intu] = b.normal(u, v)
         }
     }
     return m.NewGridTriangleMesh(samples, samples, vertices, normals, mat)

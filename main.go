@@ -29,7 +29,7 @@ func main() {
 
 	m.SetBackgroundColor(m.NewColor(200, 200, 200))
 
-	diffMat := &m.DiffuseMaterial{Color: m.NewColor(250, 0, 0)}
+	diffMat := m.NewDiffuseMaterial(m.ConstantTexture{Color: m.NewColor(250, 0, 0)})
 
     patches, err := LoadPatches("teapot")
 	if err != nil {
@@ -43,7 +43,7 @@ func main() {
 	transformation := translation.Mul(rotation)//.Mul(scale)
 	for _, patch := range patches {
 		//diffMat := &m.DiffuseMaterial{Color: m.NewColor(uint8(rand.Intn(255)), uint8(rand.Intn(255)), uint8(rand.Intn(255)))}
-		complexObject := patch.TriangulateWithNormalMapping(32, diffMat, transformation)
+		complexObject := patch.TriangulateWithNormalMapping(32, diffMat)
 		// not really a mesh but I guess thats WIP
 		patchMesh := m.NewSharedObject(complexObject, transformation)
 		scene.Add(patchMesh)
