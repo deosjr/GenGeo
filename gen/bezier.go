@@ -153,7 +153,7 @@ func (b bicubicBezierPatch) Triangulate(samples int, mat m.Material) m.Object {
             vertices[v*(samples+1)+u] = b.Evaluate(float64(u)/f64s, float64(v)/f64s)
         }
     }
-    return m.NewGridTriangleMesh(samples, samples, vertices, nil, mat)
+    return m.NewGridTriangleMesh(samples, samples, vertices, nil, nil, mat)
 }
 
 func dUBezier(controlPoints []m.Vector, u64, v float64) m.Vector {
@@ -201,13 +201,15 @@ func (b bicubicBezierPatch) TriangulateWithNormalMapping(samples int, baseMat m.
     mat := m.InterpolatedNormalMappingMaterial(baseMat)
     vertices := make([]m.Vector, (samples+1)*(samples+1))
     normals := make([]m.Vector, (samples+1)*(samples+1))
+    uvs := make([]m.Vector, (samples+1)*(samples+1))
     f64s := float64(samples)
 	for intv:=0; intv<=samples; intv++ {
 		for intu:=0; intu<=samples; intu++ {
             u, v := float64(intu)/f64s, float64(intv)/f64s
             vertices[intv*(samples+1)+intu] = b.Evaluate(u, v)
             normals[intv*(samples+1)+intu] = b.normal(u, v)
+            uvs[intv*(samples+1)+intu] = m.Vector{float32(u), float32(v), 0}
         }
     }
-    return m.NewGridTriangleMesh(samples, samples, vertices, normals, mat)
+    return m.NewGridTriangleMesh(samples, samples, vertices, normals, uvs, mat)
 }

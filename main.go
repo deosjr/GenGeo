@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"math"
 
+    //"os"
+    //"image/png"
+
 	m "github.com/deosjr/GRayT/src/model"
 	"github.com/deosjr/GRayT/src/render"
 )
@@ -29,7 +32,24 @@ func main() {
 
 	m.SetBackgroundColor(m.NewColor(200, 200, 200))
 
-	diffMat := m.NewDiffuseMaterial(m.ConstantTexture{Color: m.NewColor(250, 0, 0)})
+	//diffMat := m.NewDiffuseMaterial(m.ConstantTexture{Color: m.NewColor(250, 0, 0)})
+    //texture := m.NewUVTexture(m.TriangleMeshUVFunc)
+	//diffMat := m.NewDiffuseMaterial(texture)
+    texture := m.NewCheckerboardTexture(4, m.TriangleMeshUVFunc)
+	diffMat := m.NewDiffuseMaterial(texture)
+/*    
+    existingImageFile, err := os.Open("out.png")
+	if err != nil {
+        panic(err)
+	}
+	defer existingImageFile.Close()
+    loadedImage, err := png.Decode(existingImageFile)
+	if err != nil {
+        panic(err)
+	}
+    texture := m.NewImageTexture(loadedImage, m.TriangleMeshUVFunc)
+	diffMat := m.NewDiffuseMaterial(texture)
+ */   
 
     patches, err := LoadPatches("teapot")
 	if err != nil {
