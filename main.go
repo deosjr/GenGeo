@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"math"
 
-    //"os"
     //"image/png"
+    //"os"
 
 	m "github.com/deosjr/GRayT/src/model"
 	"github.com/deosjr/GRayT/src/render"
+    "github.com/deosjr/GenGeo/gen"
 )
 
 var (
@@ -35,8 +36,8 @@ func main() {
 	//diffMat := m.NewDiffuseMaterial(m.ConstantTexture{Color: m.NewColor(250, 0, 0)})
     //texture := m.NewUVTexture(m.TriangleMeshUVFunc)
 	//diffMat := m.NewDiffuseMaterial(texture)
-    texture := m.NewCheckerboardTexture(4, m.TriangleMeshUVFunc)
-	diffMat := m.NewDiffuseMaterial(texture)
+    //texture := m.NewCheckerboardTexture(4, m.TriangleMeshUVFunc)
+	//diffMat := m.NewDiffuseMaterial(texture)
 /*    
     existingImageFile, err := os.Open("out.png")
 	if err != nil {
@@ -50,6 +51,19 @@ func main() {
     texture := m.NewImageTexture(loadedImage, m.TriangleMeshUVFunc)
 	diffMat := m.NewDiffuseMaterial(texture)
  */   
+
+    input := gen.GrayScottInput{
+        Width: 100,
+        Height: 100,
+        Iterations: 10000,
+        FeedRate: 0.055,
+        KillRate: 0.062,
+        DiffRateA: 1.0,
+        DiffRateB: 0.5,
+    }
+    img := gen.GrayScott(input)
+    texture := m.NewImageTexture(img, m.TriangleMeshUVFunc)
+	diffMat := m.NewDiffuseMaterial(texture)
 
     patches, err := LoadPatches("teapot")
 	if err != nil {
